@@ -1,0 +1,13 @@
+{
+  "_comment": [
+    "Tried in order until one answers. The updater repoints origin at",
+    "whichever worked, so an install recovers on its own if the first",
+    "host disappears.",
+    "The installer carries its own copy of this list - it runs before",
+    "there is a clone to read this from - so add a mirror in both places."
+  ],
+  "mirrors": [
+    "https://feddakalkun.com/fedda.git",
+    "https://github.com/Feddakalkun/feddahubV3-0_torch2.10.0-cu130.git"
+  ]
+}
