@@ -53,8 +53,17 @@ Pop-Location
 
 Write-Host "  [3/4] Uploading to feddakalkun.com..." -ForegroundColor White
 # public/, not dist/: vite build empties dist and would take the mirror with it.
-tar -cz -C (Split-Path $Bare -Parent) (Split-Path $Bare -Leaf) |
-    ssh -o BatchMode=yes $Remote "rm -rf $Site/public/fedda.git && tar -xz -C $Site/public && cp -r $Site/public/fedda.git $Site/dist/fedda.git"
+#
+# Through cmd, not a PowerShell pipeline. PowerShell treats a pipe as text and
+# re-encodes it, so the tarball arrives corrupt - "gzip: stdin: not in gzip
+# format". cmd passes the bytes through untouched.
+$parent = Split-Path $Bare -Parent
+$leaf   = Split-Path $Bare -Leaf
+# dist is removed before the copy. `cp -r src dst` puts src *inside* dst when
+# dst already exists, which left dist serving the old commit with a nested
+# copy of the new one inside it.
+$remoteCmd = "rm -rf $Site/public/fedda.git $Site/dist/fedda.git && tar -xz -C $Site/public && cp -r $Site/public/fedda.git $Site/dist/fedda.git"
+cmd /c "tar -cz -C ""$parent"" ""$leaf"" | ssh -o BatchMode=yes $Remote ""$remoteCmd"""
 if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] upload failed" -ForegroundColor Red; Pop-Location; exit 1 }
 
 Write-Host "  [4/4] Verifying both sources..." -ForegroundColor White
