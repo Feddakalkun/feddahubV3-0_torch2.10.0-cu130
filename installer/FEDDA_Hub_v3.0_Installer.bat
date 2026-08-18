@@ -4,7 +4,7 @@ title FEDDA v3.0 One-Click Installer
 set "APP_NAME=FEDDA Hub v3.0"
 :: Must match installer/installer_rev.txt in the repo. Bump both together when
 :: this file changes in a way that is worth re-downloading for.
-set "INSTALLER_REV=2026-08-12.1"
+set "INSTALLER_REV=2026-08-18.1"
 set "INSTALLER_REV_URL_1=https://feddakalkun.com/installer_rev.txt"
 set "INSTALLER_REV_URL_2=https://raw.githubusercontent.com/Feddakalkun/feddahubV3-0_torch2.10.0-cu130/main/installer/installer_rev.txt"
 
