@@ -494,7 +494,13 @@ if not exist "%APP_DIR%\.git" (
         if not defined CLONED_FROM (
             echo   trying %%~U
             echo   trying %%~U >> "%INSTALL_LOG%"
-            git clone --depth 1 "%%~U" "%APP_DIR%" >> "%INSTALL_LOG%" 2>&1
+            :: No --depth 1. A repository served as plain files over HTTPS is
+            :: the dumb protocol, which cannot do shallow clones - git refuses
+            :: with "dumb http transport does not support shallow capabilities"
+            :: and the domain mirror would fail for every new install, silently
+            :: falling back to GitHub. There is one commit here, so depth buys
+            :: nothing anyway.
+            git clone "%%~U" "%APP_DIR%" >> "%INSTALL_LOG%" 2>&1
             if not errorlevel 1 set "CLONED_FROM=%%~U"
         )
     )
