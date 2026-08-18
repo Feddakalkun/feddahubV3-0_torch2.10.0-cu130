@@ -119,21 +119,38 @@ echo   Main install uses embedded Python + system Git/Node/npm where available.
 :: ============================================================================
 :: CHECK IF ALREADY INSTALLED
 :: ============================================================================
+:: A finished install is one that says so. install.ps1 writes
+:: install_report.txt as its last act and records the smoke-test verdict
+:: inside; the launcher in installer\FEDDA_Hub_v3.0_Installer.bat
+:: trusts the same line.
+::
+:: This used to test for python_embeded\python.exe. That directory
+:: is created in step 0 of 7, so any failure after it - a dropped
+:: connection during the several-gigabyte torch download above all -
+:: produced a tree the guard read as complete. It exited 0, the outer
+:: installer announced success, the self-test failed, and the advice
+:: printed underneath told the user to run the installer again because
+:: that resumes where it stopped. It did not resume. Every later attempt
+:: hit the same guard and stopped in the same place, silently.
+::
+:: Re-running is safe: each step below skips what is already present.
+set "FEDDA_REPORT=%BASE_DIR%\logs\install_report.txt"
+if exist "%FEDDA_REPORT%" (
+    findstr /R /C:"Smoke Test: *PASSED" "%FEDDA_REPORT%" >nul 2>&1
+    if not errorlevel 1 (
+        echo.
+        echo   [NOTE] This install is complete and passed its self-test.
+        echo          Run UPDATE.bat from the install root to update it.
+        echo.
+        if not "%FEDDA_UNATTENDED%"=="1" pause
+        exit /b 0
+    )
+)
 if exist "%BASE_DIR%\python_embeded\python.exe" (
     echo.
-    echo   [NOTE] Install already detected (python_embeded found^).
-    echo          Run UPDATE.bat from the install root to update, or delete python_embeded to reinstall.
+    echo   [NOTE] An unfinished install is here - continuing it.
+    echo          Steps that already finished are skipped.
     echo.
-    if not "%FEDDA_UNATTENDED%"=="1" pause
-    exit /b 0
-)
-if exist "%BASE_DIR%\venv\Scripts\python.exe" (
-    echo.
-    echo   [NOTE] Install already detected (venv found^).
-    echo          Run UPDATE.bat from the install root to update, or delete venv to reinstall.
-    echo.
-    if not "%FEDDA_UNATTENDED%"=="1" pause
-    exit /b 0
 )
 
 :: ============================================================================
