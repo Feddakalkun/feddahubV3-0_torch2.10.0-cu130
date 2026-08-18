@@ -705,6 +705,19 @@ export const FEDDA_MODULES: FeddaModule[] = [
     Icon: Film,
   },
   {
+    id: 'minimax-h3-fflf',
+    sourceModuleId: 'minimax-h3',
+    label: 'MiniMax First-Last',
+    description: 'Give it the first frame and the last one; it makes the motion between.',
+    area: 'video',
+    pack: 'booster',
+
+    tabs: ['minimax-h3-fflf'],
+    workflows: ['minimax-h3-fflf'],
+    defaultTab: 'minimax-h3-fflf',
+    Icon: Film,
+  },
+  {
     id: 'ltx-txt2vid',
     sourceModuleId: 'ltx-video',
     label: 'LTX Text2Vid',

@@ -12,14 +12,20 @@ import { WorkflowPage } from '../../components/layout/WorkflowPage';
  *
  * Video Edit takes its length and height from the source clip (the graph reads
  * them off VHS_VideoInfo), so it offers neither.
+ *
+ * First-Last Frame is the odd one out: it exists only as Int8, so it carries no
+ * model-size toggle, and its graph runs the 4-step turbo LoRA at cfg 1 - which
+ * is why its step default is a fraction of the others'.
  */
 
-type Mode = 'txt2vid' | 'img2vid' | 'videdit';
+type Mode = 'txt2vid' | 'img2vid' | 'videdit' | 'fflf';
 
 const DEFAULT_NEGATIVE = 'blurry, low quality, deformed, jitter, artifacts';
 
 const MODES = {
   txt2vid: {
+    quantised: true,
+    defaults: { width: 768, height: 1344, length: 124, steps: 20 },
     workflowId: 'minimax-h3-txt2vid',
     capability: 'Text to Video',
     description: 'Video and synchronised audio straight from a prompt.',
@@ -28,6 +34,8 @@ const MODES = {
     lengthed: true,
   },
   img2vid: {
+    quantised: true,
+    defaults: { width: 768, height: 1344, length: 124, steps: 20 },
     workflowId: 'minimax-h3-img2vid',
     capability: 'Image to Video',
     description: 'Driven by one or two reference images.',
@@ -40,6 +48,8 @@ const MODES = {
     lengthed: true,
   },
   videdit: {
+    quantised: true,
+    defaults: { width: 768, height: 1344, length: 124, steps: 20 },
     workflowId: 'minimax-h3-videdit',
     capability: 'Video Edit',
     description: 'Re-drive an existing clip.',
@@ -49,6 +59,23 @@ const MODES = {
     // Height and frame count come off the source clip inside the graph.
     sized: false,
     lengthed: false,
+  },
+  fflf: {
+    quantised: false,
+    // Both frames are resized to width x height before they reach the model, so
+    // a tall default would stretch them; square is what the graph was built at.
+    defaults: { width: 512, height: 512, length: 141, steps: 8 },
+    workflowId: 'minimax-h3-fflf',
+    capability: 'First to Last Frame',
+    description: 'Fills in the motion between a starting and an ending image.',
+    inputs: [
+      { key: 'image', kind: 'image' as const, label: 'First frame',
+        hint: 'Where the clip starts' },
+      { key: 'image2', kind: 'image' as const, label: 'Last frame',
+        hint: 'Where it has to arrive' },
+    ],
+    sized: true,
+    lengthed: true,
   },
 } as const;
 
@@ -66,7 +93,9 @@ export const MiniMaxH3Page = ({ mode }: { mode: Mode }) => {
 
   return (
     <WorkflowPage
-      workflowId={quant === 'gguf' ? `${config.workflowId}-gguf` : config.workflowId}
+      workflowId={config.quantised && quant === 'gguf'
+        ? `${config.workflowId}-gguf`
+        : config.workflowId}
       storageKey={`minimax-h3-${mode}`}
       family="MiniMax H3"
       capability={config.capability}
@@ -81,18 +110,18 @@ export const MiniMaxH3Page = ({ mode }: { mode: Mode }) => {
         negative: { placeholder: DEFAULT_NEGATIVE },
         rows: 4,
       }}
-      promptBuilder={{ imageKey: mode === 'img2vid' ? 'image' : undefined }}
+      promptBuilder={{ imageKey: mode === 'img2vid' || mode === 'fflf' ? 'image' : undefined }}
       settings={[
-        { kind: 'slider', key: 'width', label: 'Width', min: 256, max: 1536, step: 32, defaultValue: 768 },
+        { kind: 'slider', key: 'width', label: 'Width', min: 256, max: 1536, step: 32, defaultValue: config.defaults.width },
         ...(config.sized
-          ? [{ kind: 'slider' as const, key: 'height', label: 'Height', min: 256, max: 1536, step: 32, defaultValue: 1344 }]
+          ? [{ kind: 'slider' as const, key: 'height', label: 'Height', min: 256, max: 1536, step: 32, defaultValue: config.defaults.height }]
           : []),
         ...(config.lengthed
-          ? [{ kind: 'slider' as const, key: 'length', label: 'Frames', min: 25, max: 200, step: 1, defaultValue: 124,
+          ? [{ kind: 'slider' as const, key: 'length', label: 'Frames', min: 25, max: 200, step: 1, defaultValue: config.defaults.length,
               hint: 'Frames times width times height is what fills the card. Around 45 million total has run here; 47 million ran out of memory. Fewer frames is usually the cheapest way back under the line, since resolution costs quality faster than length does.' }]
           : []),
         { kind: 'slider', key: 'frame_rate', label: 'FPS', min: 8, max: 30, defaultValue: 24 },
-        { kind: 'slider', key: 'steps', label: 'Steps', min: 4, max: 50, defaultValue: 20,
+        { kind: 'slider', key: 'steps', label: 'Steps', min: 4, max: 50, defaultValue: config.defaults.steps,
           hint: 'A straight multiplier on render time - measured here at about 19 seconds per step, so 20 steps is roughly six and a half minutes and 8 steps is under three. Try lowering it before you lower the resolution; if quality holds, the time was free.' },
         // The encoder is 15 GB and has finished its work before sampling
         // starts, so where it sits is a straight trade rather than a setting
@@ -118,7 +147,7 @@ export const MiniMaxH3Page = ({ mode }: { mode: Mode }) => {
         { kind: 'seed', key: 'seed' },
       ]}
       // Owned by the page, not a setting: it picks which graph runs.
-      extraSections={(
+      extraSections={config.quantised ? (
         <div className="workflow-section">
           <div className="workflow-section-header">
             <div className="workflow-section-title flex items-center gap-1.5">
@@ -149,7 +178,7 @@ export const MiniMaxH3Page = ({ mode }: { mode: Mode }) => {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
       generateLabel="Generate Video"
       generatingLabel="Generating video…"
       readyMessage="Video ready"

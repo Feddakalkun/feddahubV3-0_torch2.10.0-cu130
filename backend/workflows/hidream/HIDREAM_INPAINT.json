@@ -1,7 +1,7 @@
 {
   "359": {
     "inputs": {
-      "text": "=== DOWNLOAD REPORT ===\nTotal files: 8\nSuccessful downloads: 0\nAlready existed: 8\nInterrupted: 0\nFailed: 0\nMax concurrent: 3\nSpeed limit: Unlimited\nResume enabled: True\nValidation enabled: False\nAuto-organize: False\n\nDetails:\n✓ clip_g_hidream.safetensors: Already exists (1.29 GB)\n✓ clip_l_hidream.safetensors: Already exists (236.12 MB)\n✓ llama_3.1_8b_instruct_fp8_scaled.safetensors: Already exists (8.46 GB)\n✓ t5xxl_fp8_e4m3fn_scaled.safetensors: Already exists (4.80 GB)\n✓ hidream-vae.safetensors: Already exists (319.77 MB)\n✓ hidream_e1_full_bf16-Q4_0.gguf: Already exists (9.92 GB)\n✓ hidream_i1_fast_fp8.safetensors: Already exists (15.93 GB)\n✓ Mistral-7B-Instruct-v0.3.Q4_K_M.gguf: Already exists (4.07 GB)",
+      "text": "",
       "anything": [
         "361",
         0
@@ -14,7 +14,7 @@
   },
   "361": {
     "inputs": {
-      "download_links": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_g_hidream.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_l_hidream.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/llama_3.1_8b_instruct_fp8_scaled.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/vae/ae.safetensors vae hidream-vae.safetensors\nhttps://huggingface.co/ND911/HiDream_e1_full_bf16-ggufs/resolve/main/hidream_e1_full_bf16-Q4_0.gguf diffusion_models\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_fast_fp8.safetensors diffusion_models\nhttps://huggingface.co/MaziyarPanahi/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3.Q4_K_M.gguf llm_gguf",
+      "download_links": "https://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_g_hidream.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/clip_l_hidream.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/llama_3.1_8b_instruct_fp8_scaled.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors clip\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/vae/ae.safetensors vae hidream-vae.safetensors\nhttps://huggingface.co/Comfy-Org/HiDream-I1_ComfyUI/resolve/main/split_files/diffusion_models/hidream_i1_fast_fp8.safetensors diffusion_models",
       "auto_download": true,
       "max_concurrent_downloads": 3,
       "max_download_speed_mbps": 0,
@@ -150,7 +150,7 @@
   },
   "372": {
     "inputs": {
-      "unet_name": "hidreamI1FP8Uncensored_fastV033Alpha.safetensors",
+      "unet_name": "hidream_i1_fast_fp8.safetensors",
       "weight_dtype": "default"
     },
     "class_type": "UNETLoader",

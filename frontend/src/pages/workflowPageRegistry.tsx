@@ -82,6 +82,7 @@ export const VIDEO_WORKFLOW_PAGES: Record<string, ComponentType> = {
   'minimax-h3-txt2vid': () => <MiniMaxH3Page mode="txt2vid" />,
   'minimax-h3-img2vid': () => <MiniMaxH3Page mode="img2vid" />,
   'minimax-h3-videdit': () => <MiniMaxH3Page mode="videdit" />,
+  'minimax-h3-fflf': () => <MiniMaxH3Page mode="fflf" />,
   'ltx-img2vid': LtxImg2VidPage,
   'ltx-flf': LtxFlfPage,
   // Same workflow, conversational entry point alongside the full page.
