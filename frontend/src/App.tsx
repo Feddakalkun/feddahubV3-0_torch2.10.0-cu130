@@ -25,6 +25,7 @@ import { TransformReelPage } from './pages/tools/TransformReelPage';
 import { ScailStudioPage } from './pages/tools/ScailStudioPage';
 import { ReelMachinePage } from './pages/tools/ReelMachinePage';
 import { ModuleUnavailablePage } from './pages/ModuleUnavailablePage';
+import { MiniMaxDirectorPage } from './pages/minimax/MiniMaxDirectorPage';
 import { AgentShell } from './pages/AgentShell';
 import {
   ACTIVE_TAB_STORAGE_KEY,
@@ -203,6 +204,9 @@ function FeddaApp() {
     // Lives in the 'home' area so it can own the banner on the front page,
     // which means the area-based dispatch below never reaches it.
     if (activeTab === 'chat-edit') return <AgentShell />;
+    // Same reason as chat-edit above: it sits in the 'home' area to earn a
+    // front-page card, and the area dispatch below only knows image and video.
+    if (activeTab === 'minimax-h3-director') return <MiniMaxDirectorPage />;
     if (activeTab === 'media-downloader') return <MediaDownloaderPage />;
     if (activeTab === 'transform-reel') return <TransformReelPage />;
     if (activeTab === 'scail-studio') return <ScailStudioPage />;

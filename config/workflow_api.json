@@ -3469,6 +3469,181 @@
       }
     }
   },
+  "minimax-h3-director": {
+    "name": "MiniMax H3 Director",
+    "filename": "minimax/MINIMAXH3DIRECTOR.json",
+    "description": "Storyboard editor: cut a clip into shots, each with its own prompt, keyframe and sound, and render them as one take.",
+    "inputs": {
+      "timeline_data": {
+        "node_id": "5",
+        "input_key": "timeline_data",
+        "type": "string",
+        "label": "Timeline"
+      },
+      "local_prompts": {
+        "node_id": "5",
+        "input_key": "local_prompts",
+        "type": "string",
+        "label": "Shot prompts"
+      },
+      "segment_lengths": {
+        "node_id": "5",
+        "input_key": "segment_lengths",
+        "type": "string",
+        "label": "Shot lengths"
+      },
+      "start_frame": {
+        "node_id": "5",
+        "input_key": "start_frame",
+        "type": "number",
+        "label": "Start frame"
+      },
+      "end_frame": {
+        "node_id": "5",
+        "input_key": "end_frame",
+        "type": "number",
+        "label": "End frame"
+      },
+      "duration_frames": {
+        "node_id": "5",
+        "input_key": "duration_frames",
+        "type": "number",
+        "label": "Frames"
+      },
+      "start_second": {
+        "node_id": "5",
+        "input_key": "start_second",
+        "type": "number",
+        "label": "Start"
+      },
+      "end_second": {
+        "node_id": "5",
+        "input_key": "end_second",
+        "type": "number",
+        "label": "End"
+      },
+      "duration_seconds": {
+        "node_id": "5",
+        "input_key": "duration_seconds",
+        "type": "number",
+        "label": "Length"
+      },
+      "frame_rate": {
+        "node_id": "5",
+        "input_key": "frame_rate",
+        "type": "number",
+        "label": "Timeline FPS"
+      },
+      "display_mode": {
+        "node_id": "5",
+        "input_key": "display_mode",
+        "type": "string",
+        "label": "Ruler"
+      },
+      "width": {
+        "node_id": "5",
+        "input_key": "custom_width",
+        "type": "number",
+        "label": "Width"
+      },
+      "height": {
+        "node_id": "5",
+        "input_key": "custom_height",
+        "type": "number",
+        "label": "Height"
+      },
+      "resize_method": {
+        "node_id": "5",
+        "input_key": "resize_method",
+        "type": "string",
+        "label": "Fit"
+      },
+      "divisible_by": {
+        "node_id": "5",
+        "input_key": "divisible_by",
+        "type": "number",
+        "label": "Snap to"
+      },
+      "img_compression": {
+        "node_id": "5",
+        "input_key": "img_compression",
+        "type": "number",
+        "label": "Keyframe CRF"
+      },
+      "use_custom_audio": {
+        "node_id": "5",
+        "input_key": "use_custom_audio",
+        "type": "boolean",
+        "label": "Audio refs"
+      },
+      "use_custom_motion": {
+        "node_id": "5",
+        "input_key": "use_custom_motion",
+        "type": "boolean",
+        "label": "Motion refs"
+      },
+      "override_audio": {
+        "node_id": "5",
+        "input_key": "override_audio",
+        "type": "boolean",
+        "label": "Use source audio"
+      },
+      "ref_image_size": {
+        "node_id": "5",
+        "input_key": "ref_image_size",
+        "type": "string",
+        "label": "Reference size"
+      },
+      "ref_image_notes": {
+        "node_id": "5",
+        "input_key": "ref_image_notes",
+        "type": "string",
+        "label": "Reference notes"
+      },
+      "shift_video": {
+        "node_id": "5",
+        "input_key": "shift_video",
+        "type": "number",
+        "label": "Video shift"
+      },
+      "shift_audio": {
+        "node_id": "5",
+        "input_key": "shift_audio",
+        "type": "number",
+        "label": "Audio shift"
+      },
+      "seed": {
+        "node_id": "386",
+        "input_key": "noise_seed",
+        "type": "number",
+        "label": "Seed"
+      },
+      "steps": {
+        "node_id": "388",
+        "input_key": "steps",
+        "type": "number",
+        "label": "Steps"
+      },
+      "scheduler": {
+        "node_id": "388",
+        "input_key": "scheduler",
+        "type": "string",
+        "label": "Scheduler"
+      },
+      "sampler_name": {
+        "node_id": "387",
+        "input_key": "sampler_name",
+        "type": "string",
+        "label": "Sampler"
+      },
+      "encoder_device": {
+        "node_id": "2",
+        "input_key": "device",
+        "type": "string",
+        "label": "Text encoder"
+      }
+    }
+  },
   "minimax-h3-txt2vid-gguf": {
     "name": "MiniMax H3 Text to Video (GGUF)",
     "filename": "minimax/MINIMAXH3txt2video-gguf.json",

@@ -382,5 +382,12 @@
     "url": "https://codeberg.org/Gourieff/comfyui-reactor-node.git",
     "folder": "comfyui-reactor-node",
     "note": "ReActor face swap/restore (GitHub repo removed - Codeberg is the maintained home)"
+  },
+  {
+    "name": "ComfyUI-MiniMaxH3-Director",
+    "url": "https://github.com/seesee75-commits/ComfyUI-MiniMaxH3-Director.git",
+    "folder": "ComfyUI-MiniMaxH3-Director",
+    "core": true,
+    "note": "MiniMaxH3DirectorCS - the storyboard timeline node behind the Director page. Core because the page is on the front page."
   }
 ]
