@@ -146,6 +146,13 @@ export interface WorkflowPageProps {
   /** Anything genuinely bespoke, rendered between Settings and Generate. */
   extraSections?: ReactNode;
   /**
+   * Rendered above Settings instead of below them, for a page whose real
+   * content is not a settings form. The Director's storyboard belongs
+   * directly under the prompt - it is what the page is for, and pushing it
+   * below ten sliders buries it.
+   */
+  extraSectionsTop?: ReactNode;
+  /**
    * LoRA pickers. An array because WAN 2.2 splits high- and low-noise passes
    * into two slots, and the 2-LoRA workflows use the same shape.
    * `paramKey` is what the graph expects, e.g. lora_slot2.
@@ -186,6 +193,7 @@ export const WorkflowPage = ({
   promptActions,
   promptBuilder,
   extraSections,
+  extraSectionsTop,
   loras = [],
 }: WorkflowPageProps) => {
   const { toast } = useToast();
@@ -680,6 +688,8 @@ export const WorkflowPage = ({
             </div>
           </WorkflowSection>
         )}
+
+        {extraSectionsTop}
 
         {settings.length > 0 && (
           <WorkflowSection

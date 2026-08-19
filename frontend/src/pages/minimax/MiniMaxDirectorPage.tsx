@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  Clapperboard, Plus, Trash2, Copy, ChevronLeft, ChevronRight,
+  Clapperboard, Plus, Trash2, Copy,
   Image as ImageIcon, Film, Music, X, Flag,
 } from 'lucide-react';
 import { WorkflowPage } from '../../components/layout/WorkflowPage';
@@ -75,9 +75,21 @@ const emptySubject = (): Subject => ({
  * anything.
  */
 const DEFAULT_SEGMENTS: Segment[] = [
-  { id: 'seg0', prompt: '', length: 62, type: 'text' },
-  { id: 'seg1', prompt: '', length: 62, type: 'text' },
+  { id: 'seg0', type: 'text', length: 41,
+    prompt: 'wide establishing shot: the rider crests the dune, engine roaring, '
+          + 'sand spraying off the rear wheel into the low sun' },
+  { id: 'seg1', type: 'text', length: 41,
+    prompt: 'cut to a low tracking shot alongside the bike, heat haze rippling, '
+          + 'the horizon tilting as she leans into the turn' },
+  { id: 'seg2', type: 'text', length: 41,
+    prompt: 'cut to a close-up on her visor, the dunes reflected in it, '
+          + 'she exhales and the engine note drops away' },
 ];
+
+const EXAMPLE_PROMPT =
+  'Cinematic desert chase, late afternoon golden hour, anamorphic lens, '
+  + 'shallow depth of field, fine film grain.';
+const EXAMPLE_SOUNDSCAPE = 'wind over open sand, a distant engine';
 
 /** The shapes H3 is actually run at, as one question instead of two sliders. */
 const SHAPES = {
@@ -92,7 +104,7 @@ export const MiniMaxDirectorPage = () => {
   const { toast } = useToast();
 
   const [segments, setSegments] = usePersistentState<Segment[]>(
-    'mmx_director_segments', DEFAULT_SEGMENTS);
+    'mmx_director_segments_v2', DEFAULT_SEGMENTS);
   const [selected, setSelected] = useState(0);
   const [motion, setMotion] = usePersistentState<Clip[]>('mmx_director_motion', []);
   const [audio, setAudio] = usePersistentState<Clip[]>('mmx_director_audio', []);
@@ -100,7 +112,7 @@ export const MiniMaxDirectorPage = () => {
     'mmx_director_subjects', [emptySubject()]);
   const [fps, setFps] = usePersistentState('mmx_director_fps', 24);
   const [refsOn, setRefsOn] = usePersistentState('mmx_director_refs', false);
-  const [soundscape, setSoundscape] = usePersistentState('mmx_director_soundscape', '');
+  const [soundscape, setSoundscape] = usePersistentState('mmx_director_soundscape_v2', EXAMPLE_SOUNDSCAPE);
   const [music, setMusic] = usePersistentState('mmx_director_music', '');
   const [showChars, setShowChars] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -154,17 +166,6 @@ export const MiniMaxDirectorPage = () => {
     setSelected((k) => Math.max(0, Math.min(k, segments.length - 2)));
   };
 
-  const moveShot = (i: number, dir: -1 | 1) => {
-    const j = i + dir;
-    if (j < 0 || j >= segments.length) return;
-    setSegments((s) => {
-      const copy = [...s];
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-      return copy;
-    });
-    setSelected(j);
-  };
-
   const duplicateShot = (i: number) => {
     setSegments((s) => [
       ...s.slice(0, i + 1), { ...s[i], id: newId() }, ...s.slice(i + 1),
@@ -178,7 +179,6 @@ export const MiniMaxDirectorPage = () => {
   const refFiles = refImages + motion.length + audio.length;
   const motionSeconds = motion.reduce((n, c) => n + c.length, 0) / fps;
 
-  const shot = segments[Math.min(selected, segments.length - 1)];
 
   /** The whole editor as the node wants it. One place, so nothing can drift. */
   const buildTimeline = (globalPrompt: string) => {
@@ -257,7 +257,7 @@ export const MiniMaxDirectorPage = () => {
       />
       <WorkflowPage
         workflowId="minimax-h3-director"
-        storageKey="minimax-h3-director"
+        storageKey="minimax-h3-director-v2"
         family="MiniMax H3"
         capability="Director"
         description="Cut a clip into shots before you render it. Each shot gets its own prompt, its own length and its own keyframe, and they come out as one continuous take with sound."
@@ -265,8 +265,9 @@ export const MiniMaxDirectorPage = () => {
         output="video"
         prompt={{
           context: 'minimax-h3-director',
-          label: 'Global prompt',
+          label: 'Describe the scene',
           placeholder: 'The look, the place, the people - everything true of the whole clip…',
+          defaultValue: EXAMPLE_PROMPT,
           rows: 4,
         }}
         settings={[
@@ -355,9 +356,8 @@ export const MiniMaxDirectorPage = () => {
             ref_image_notes: '',
           };
         }}
-        extraSections={(
+        extraSectionsTop={(
           <div className="space-y-4">
-            {/* ---- the storyboard strip ---- */}
             <div className="workflow-section">
               <div className="workflow-section-header">
                 <div className="workflow-section-title flex items-center gap-1.5">
@@ -391,29 +391,98 @@ export const MiniMaxDirectorPage = () => {
                 onUpload={uploadFile}
               />
 
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <button type="button" onClick={addShot}
-                        className="flex items-center gap-1 rounded-md border border-white/15 px-2 py-1
-                                   text-[11px] text-white/70 transition hover:text-white">
-                  <Plus className="h-3 w-3" /> Shot
-                </button>
-                <button type="button" onClick={() => duplicateShot(selected)}
-                        className="flex items-center gap-1 rounded-md border border-white/10 px-2 py-1
-                                   text-[11px] text-white/50 transition hover:text-white">
-                  <Copy className="h-3 w-3" /> Duplicate
-                </button>
-                <button type="button" onClick={() => moveShot(selected, -1)}
-                        className="rounded-md border border-white/10 px-2 py-1 text-white/50 hover:text-white">
-                  <ChevronLeft className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={() => moveShot(selected, 1)}
-                        className="rounded-md border border-white/10 px-2 py-1 text-white/50 hover:text-white">
-                  <ChevronRight className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={() => removeShot(selected)}
-                        className="ml-auto flex items-center gap-1 rounded-md border border-white/10 px-2 py-1
-                                   text-[11px] text-white/40 transition hover:border-red-400/40 hover:text-red-300">
-                  <Trash2 className="h-3 w-3" /> Delete
+              <div className="mt-3 space-y-2">
+                {segments.map((seg, i) => (
+                  <div
+                    key={seg.id}
+                    onClick={() => setSelected(i)}
+                    className={`rounded-lg border p-2.5 transition ${
+                      i === selected
+                        ? 'border-white/25 bg-white/[0.04]'
+                        : 'border-white/10 hover:border-white/20'}`}
+                  >
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-white/70">Shot {i + 1}</span>
+                      <span className="text-[11px] text-white/35">{fmt(seg.length, fps)}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); duplicateShot(i); }}
+                        className="ml-auto text-white/35 transition hover:text-white"
+                        title="Duplicate this shot"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeShot(i); }}
+                        className="text-white/35 transition hover:text-red-300"
+                        title="Delete this shot"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <textarea
+                      value={seg.prompt}
+                      onChange={(e) => patch(i, { prompt: e.target.value })}
+                      onFocus={() => setSelected(i)}
+                      rows={2}
+                      placeholder="What happens in this shot — the framing, the move, the sound…"
+                      className="w-full rounded-md border border-white/10 bg-black/30 px-2.5 py-2
+                                 text-[12px] text-white/85 placeholder:text-white/25"
+                    />
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {seg.imageFile ? (
+                        <span className="flex items-center gap-1 rounded-md border border-white/15 px-2 py-1
+                                         text-[11px] text-white/70">
+                          <ImageIcon className="h-3 w-3" />
+                          <span className="max-w-[160px] truncate">{seg.fileName || seg.imageFile}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation();
+                              patch(i, { imageFile: undefined, fileName: undefined, type: 'text' }); }}
+                            className="text-white/40 hover:text-white"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation();
+                            pickFile('image/*', (f) =>
+                              patch(i, { imageFile: f, fileName: f, type: 'image' })); }}
+                          className="flex items-center gap-1 rounded-md border border-dashed border-white/15
+                                     px-2 py-1 text-[11px] text-white/45 transition
+                                     hover:border-white/30 hover:text-white/80"
+                        >
+                          <ImageIcon className="h-3 w-3" /> Keyframe
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); patch(i, { isEndFrame: !seg.isEndFrame }); }}
+                        className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition ${
+                          seg.isEndFrame
+                            ? 'border-white/30 bg-white/10 text-white'
+                            : 'border-white/10 text-white/45 hover:text-white/80'}`}
+                        title="Treat this image as the shot's closing frame rather than its opening one"
+                      >
+                        <Flag className="h-3 w-3" /> End frame
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addShot}
+                  className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed
+                             border-white/15 py-2 text-[11px] text-white/45 transition
+                             hover:border-white/30 hover:text-white/80"
+                >
+                  <Plus className="h-3 w-3" /> Add a shot
                 </button>
               </div>
 
@@ -430,63 +499,11 @@ export const MiniMaxDirectorPage = () => {
                 </p>
               )}
             </div>
+          </div>
+        )}
 
-            {/* ---- the selected shot ---- */}
-            {shot && (
-              <div className="workflow-section">
-                <div className="workflow-section-header">
-                  <div className="workflow-section-title">
-                    Shot {selected + 1} of {segments.length}
-                  </div>
-                  <div className="text-[11px] text-white/45">{fmt(shot.length, fps)}</div>
-                </div>
-
-                <textarea
-                  value={shot.prompt}
-                  onChange={(e) => patch(selected, { prompt: e.target.value })}
-                  rows={3}
-                  placeholder="What happens in this shot — the framing, the move, the sound…"
-                  className="w-full rounded-md border border-white/10 bg-black/30 px-2.5 py-2
-                             text-[12px] text-white/85 placeholder:text-white/25"
-                />
-
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {shot.imageFile ? (
-                    <span className="flex items-center gap-1 rounded-md border border-white/15 px-2 py-1 text-[11px] text-white/70">
-                      <ImageIcon className="h-3 w-3" />
-                      <span className="max-w-[180px] truncate">{shot.fileName || shot.imageFile}</span>
-                      <button type="button" onClick={() => patch(selected, { imageFile: undefined, fileName: undefined })}
-                              className="text-white/40 hover:text-white">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => pickFile('image/*', (f) =>
-                        patch(selected, { imageFile: f, fileName: f, type: 'image' }))}
-                      className="flex items-center gap-1 rounded-md border border-dashed border-white/15 px-2 py-1
-                                 text-[11px] text-white/45 transition hover:border-white/30 hover:text-white/80"
-                    >
-                      <ImageIcon className="h-3 w-3" /> Keyframe
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => patch(selected, { isEndFrame: !shot.isEndFrame })}
-                    className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition ${
-                      shot.isEndFrame
-                        ? 'border-white/30 bg-white/10 text-white'
-                        : 'border-white/10 text-white/45 hover:text-white/80'}`}
-                    title="Treat this image as the shot's closing frame rather than its opening one"
-                  >
-                    <Flag className="h-3 w-3" /> End frame
-                  </button>
-                </div>
-              </div>
-            )}
-
+        extraSections={(
+          <div className="space-y-4">
             <button
               type="button"
               onClick={() => setShowMore(!showMore)}
