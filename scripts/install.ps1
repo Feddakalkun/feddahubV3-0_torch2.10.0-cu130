@@ -1062,20 +1062,24 @@ Write-Host "         Run: RUN.bat                                     " -Foregro
 Write-Host "  ========================================================" -ForegroundColor Green
 Write-Host ""
 
-# Only the core nodes are installed above, which leaves roughly a third of
-# config/nodes.json on disk. That is deliberate - the heavy packs arrive with
-# the models of whichever workflow needs them - but without saying so the
-# install looks half-finished, and the first "missing nodes" message looks like
-# a bug rather than the design.
+# Only the core nodes are installed above, leaving most of config/nodes.json
+# on disk. UPDATE.bat is what fetches the rest, and this screen has to say so
+# plainly.
+#
+# It used to promise that the heavy packs "download the first time you open a
+# workflow that needs them". Nothing implements that: module_service reads
+# nodes.json to report state and there is no git clone anywhere in the
+# backend. A user who believed it sat waiting for a download that never
+# started, and read "Load Diffusion Model (GGUF) not found" as a broken
+# install rather than a step nobody had taken.
 Write-Host "  What happens next" -ForegroundColor Cyan
 Write-Host "    Start with RUN.bat - the app is ready to use." -ForegroundColor Gray
 Write-Host ""
-Write-Host "    Only the shared core nodes are installed right now. Heavy" -ForegroundColor Gray
-Write-Host "    workflow packs (WAN, LTX, LayerStyle, ControlNet, ...) download" -ForegroundColor Gray
-Write-Host "    the first time you open a workflow that needs them, together" -ForegroundColor Gray
-Write-Host "    with that workflow's models. So the first run of a big workflow" -ForegroundColor Gray
-Write-Host "    takes a while - it is downloading, not stuck." -ForegroundColor Gray
+Write-Host "    Only the shared core node packs are installed right now, which" -ForegroundColor Gray
+Write-Host "    covers the lighter workflows. The heavy ones (WAN, LTX," -ForegroundColor Gray
+Write-Host "    LayerStyle, ControlNet, ...) need packs that are not here yet," -ForegroundColor Gray
+Write-Host "    and will say a node is missing until they are." -ForegroundColor Gray
 Write-Host ""
-Write-Host "    Prefer to fetch everything up front? Run UPDATE.bat once." -ForegroundColor Gray
-Write-Host "    It installs every node pack now instead of on demand." -ForegroundColor Gray
+Write-Host "    Run UPDATE.bat once to install every pack. It takes a while" -ForegroundColor Yellow
+Write-Host "    and only has to be done once." -ForegroundColor Yellow
 Write-Host ""
