@@ -6,6 +6,13 @@
 
 param([switch]$SilentMode)
 
+# The mirror list lives in fedda_mirrors.ps1 so run.ps1 can read the same
+# one without loading this file, which starts an update the moment it is
+# sourced. The inline copy below is the fallback for a tree that is
+# mid-update and does not have the shared file yet.
+$FeddaMirrorHelper = Join-Path $PSScriptRoot "fedda_mirrors.ps1"
+if (Test-Path $FeddaMirrorHelper) { . $FeddaMirrorHelper }
+if (-not (Get-Command Get-FeddaMirrors -ErrorAction SilentlyContinue)) {
 function Get-FeddaMirrors {
     <#
         Where FEDDA can be fetched from, in order. config/mirrors.json is the
@@ -23,6 +30,7 @@ function Get-FeddaMirrors {
         "https://feddakalkun.com/fedda.git",
         "https://github.com/Feddakalkun/feddahubV3-0_torch2.10.0-cu130.git"
     )
+}
 }
 
 $ErrorActionPreference = "Stop"
