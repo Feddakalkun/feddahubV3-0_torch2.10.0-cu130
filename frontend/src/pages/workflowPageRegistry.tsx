@@ -22,6 +22,7 @@ import { LtxImg2VidPage } from './ltx/LtxImg2VidPage';
 import { LtxT2VPage } from './ltx/LtxT2VPage';
 import { MiniMaxH3Page } from './minimax/MiniMaxH3Page';
 import { MiniMaxDirectorPage } from './minimax/MiniMaxDirectorPage';
+import { MiniMaxRef8Page } from './minimax/MiniMaxRef8Page';
 import { LtxFlfPage } from './ltx/LtxFlfPage';
 import { LtxMultiFramePage } from './ltx/LtxMultiFramePage';
 import { FluxHeadSwapPage } from './fluxklein/FluxHeadSwapPage';
@@ -85,6 +86,8 @@ export const VIDEO_WORKFLOW_PAGES: Record<string, ComponentType> = {
   'minimax-h3-videdit': () => <MiniMaxH3Page mode="videdit" />,
   'minimax-h3-fflf': () => <MiniMaxH3Page mode="fflf" />,
   'minimax-h3-director': () => <MiniMaxDirectorPage />,
+  'minimax-h3-audiosync': () => <MiniMaxH3Page mode="audiosync" />,
+  'minimax-h3-ref8': () => <MiniMaxRef8Page />,
   'ltx-img2vid': LtxImg2VidPage,
   'ltx-flf': LtxFlfPage,
   // Same workflow, conversational entry point alongside the full page.
