@@ -4114,6 +4114,62 @@ async def set_vision_provider(req: VisionProviderRequest):
     return await get_vision_provider()
 
 
+# How long Ollama keeps a vision model resident after answering.
+#
+# It used to be 0 - unloaded the moment it replied - so captioning several
+# pictures in a row reloaded 7 GB each time. The reason for 0 was real (ComfyUI
+# wants the card, see agent_memory.py), but it is the wrong end of the trade
+# while someone is still writing a prompt. Warm for a short while, and evicted
+# outright when a render starts: see _evict_vision_model, called from
+# /api/generate.
+CAPTION_KEEP_ALIVE = 120
+
+# Vision models tile a large picture and read the tiles; past about a thousand
+# pixels on the long edge that is prefill time spent on detail no caption uses.
+CAPTION_MAX_EDGE = 1024
+
+
+def _shrink_for_vision(img_bytes: bytes) -> bytes:
+    """The picture at a size a captioner actually reads, or unchanged on error.
+
+    Returning the original on any failure is deliberate: a caption from a
+    too-large image is slow, a caption from no image at all is a broken button.
+    """
+    try:
+        from PIL import Image as _PILImage
+        import io as _io
+        im = _PILImage.open(_io.BytesIO(img_bytes))
+        if max(im.size) <= CAPTION_MAX_EDGE:
+            return img_bytes
+        im = im.convert("RGB")
+        im.thumbnail((CAPTION_MAX_EDGE, CAPTION_MAX_EDGE), _PILImage.LANCZOS)
+        buf = _io.BytesIO()
+        im.save(buf, format="JPEG", quality=88)
+        out = buf.getvalue()
+        logger.info("Caption image %d -> %d bytes", len(img_bytes), len(out))
+        return out
+    except Exception as e:
+        logger.warning("Could not shrink image for captioning (%s); sending as is", e)
+        return img_bytes
+
+
+def _evict_vision_model() -> None:
+    """Drop the vision model from VRAM before ComfyUI needs it.
+
+    Ollama unloads a model when asked to keep it alive for zero seconds, which
+    is what an empty prompt with keep_alive 0 does. Best effort - a render must
+    not fail because this did.
+    """
+    try:
+        model = _get_ollama_vision_model()
+        if not model:
+            return
+        requests.post(f"{OLLAMA_URL}/api/generate",
+                      json={"model": model, "keep_alive": 0}, timeout=10)
+    except Exception as e:
+        logger.debug("Vision model eviction skipped: %s", e)
+
+
 @app.post("/api/ollama/caption")
 async def ollama_caption_image(file: UploadFile = File(...), context: str = Form("zimage")):
     """Caption an uploaded image with whichever vision provider is selected.
@@ -4133,7 +4189,7 @@ async def ollama_caption_image(file: UploadFile = File(...), context: str = Form
     """
     import base64, uuid as _uuid
 
-    img_bytes = await file.read()
+    img_bytes = _shrink_for_vision(await file.read())
 
     settings = load_settings()
     if (settings.get("vision_provider") or "ollama").strip().lower() == "venice":
@@ -4172,7 +4228,7 @@ async def ollama_caption_image(file: UploadFile = File(...), context: str = Form
         "prompt": _caption_prompt_for_context(context),
         "images": [img_b64],
         "stream": False,
-        "keep_alive": 0,
+        "keep_alive": CAPTION_KEEP_ALIVE,
         "options": {"temperature": 0.2, "num_predict": 200},
     }
 
@@ -6777,6 +6833,10 @@ async def generate(req: GenerateRequest):
     Loads workflow, injects params, and sends to ComfyUI.
     """
     print(f"[GENERATE] Received workflow_id='{req.workflow_id}' | loras_count={len(req.params.get('loras') or [])}")
+
+    # Hand the card back before anything is queued: the captioner is allowed to
+    # stay warm while someone writes, not while ComfyUI loads twenty gigabytes.
+    _evict_vision_model()
 
     workflow_availability = module_service.is_workflow_available(req.workflow_id)
     if not workflow_availability.get("available"):
