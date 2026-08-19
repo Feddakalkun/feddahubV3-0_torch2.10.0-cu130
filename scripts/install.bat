@@ -46,7 +46,9 @@ where python >nul 2>nul
 if %errorlevel% equ 0 (
     set "HAS_PYTHON=1"
     for /f "tokens=*" %%v in ('python --version 2^>^&1') do set "PY_VERSION=%%v"
-    :: Parse minor version - "Python 3.10.11" -> extract 10
+    rem Parse minor version - "Python 3.10.11" -> extract 10. rem, not ::,
+    rem because this is inside a block: cmd runs a label there and prints
+    rem "The system cannot find the drive specified".
     for /f "tokens=2 delims=." %%m in ('python --version 2^>^&1') do set "PY_MINOR=%%m"
     if !PY_MINOR! GEQ 10 set "PY_VERSION_OK=1"
     if !PY_MINOR! EQU 10 set "PY_VERSION_WARN=1"
