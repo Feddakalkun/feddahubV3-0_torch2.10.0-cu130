@@ -321,7 +321,7 @@
       "task": "caption_to_phrase_grounding",
       "fill_mask": false,
       "keep_model_loaded": false,
-      "max_new_tokens": 1024,
+      "max_new_tokens": 256,
       "num_beams": 3,
       "do_sample": false,
       "output_mask_select": "0",
