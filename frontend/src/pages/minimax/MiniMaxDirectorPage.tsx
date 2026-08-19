@@ -67,10 +67,23 @@ const emptySubject = (): Subject => ({
   retention: 'fully_preserved', images: [],
 });
 
+/**
+ * Two shots of 62 frames is 124 - over the 96 H3 was trained on, and exactly on
+ * the 17k+5 grid so nothing is rounded up. The page used to open on 82, which
+ * tripped its own "below what H3 was trained on" notice before anyone touched
+ * anything.
+ */
 const DEFAULT_SEGMENTS: Segment[] = [
-  { id: 'seg0', prompt: '', length: 41, type: 'text' },
-  { id: 'seg1', prompt: '', length: 41, type: 'text' },
+  { id: 'seg0', prompt: '', length: 62, type: 'text' },
+  { id: 'seg1', prompt: '', length: 62, type: 'text' },
 ];
+
+/** The shapes H3 is actually run at, as one question instead of two sliders. */
+const SHAPES = {
+  landscape: { width: 1344, height: 768 },
+  portrait: { width: 768, height: 1344 },
+  square: { width: 1024, height: 1024 },
+} as const;
 
 const fmt = (frames: number, fps: number) => `${(frames / fps).toFixed(2)}s`;
 
@@ -89,6 +102,7 @@ export const MiniMaxDirectorPage = () => {
   const [soundscape, setSoundscape] = usePersistentState('mmx_director_soundscape', '');
   const [music, setMusic] = usePersistentState('mmx_director_music', '');
   const [showChars, setShowChars] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   const fileInput = useRef<HTMLInputElement | null>(null);
   const pending = useRef<((filename: string) => void) | null>(null);
@@ -122,7 +136,7 @@ export const MiniMaxDirectorPage = () => {
     setSegments((s) => s.map((seg, j) => (j === i ? { ...seg, ...p } : seg)));
 
   const addShot = () => {
-    setSegments((s) => [...s, { id: newId(), prompt: '', length: 41, type: 'text' }]);
+    setSegments((s) => [...s, { id: newId(), prompt: '', length: 62, type: 'text' }]);
     setSelected(segments.length);
   };
 
@@ -309,12 +323,18 @@ export const MiniMaxDirectorPage = () => {
           placeholder: 'The look, the place, the people - everything true of the whole clip…',
           rows: 4,
         }}
-        promptBuilder={{ kind: 'video' }}
         settings={[
-          { kind: 'slider', key: 'width', label: 'Width', min: 256, max: 1536, step: 32, defaultValue: 1344 },
-          { kind: 'slider', key: 'height', label: 'Height', min: 256, max: 1536, step: 32, defaultValue: 768 },
+          {
+            kind: 'chips', key: 'shape', label: 'Shape', defaultValue: 'landscape',
+            options: [
+              { label: 'Landscape', value: 'landscape' },
+              { label: 'Portrait', value: 'portrait' },
+              { label: 'Square', value: 'square' },
+            ],
+          },
           {
             kind: 'chips', key: 'resize_method', label: 'Fit keyframes', defaultValue: 'crop',
+            advanced: true,
             hint: 'How your images are fitted to the output canvas when they are not the same shape.',
             options: [
               { label: 'Crop', value: 'crop' },
@@ -324,12 +344,12 @@ export const MiniMaxDirectorPage = () => {
             ],
           },
           {
-            kind: 'slider', key: 'steps', label: 'Steps', min: 4, max: 50, defaultValue: 8,
+            kind: 'slider', key: 'steps', label: 'Steps', advanced: true, min: 4, max: 50, defaultValue: 8,
             hint: 'The graph ships with the 4-step turbo LoRA at cfg 1, which is why 8 is the '
                 + 'default here rather than 20. Raising it costs time in a straight line.',
           },
           {
-            kind: 'chips', key: 'sampler_name', label: 'Sampler', defaultValue: 'res_multistep',
+            kind: 'chips', key: 'sampler_name', label: 'Sampler', advanced: true, defaultValue: 'res_multistep',
             options: [
               { label: 'res_multistep', value: 'res_multistep' },
               { label: 'euler', value: 'euler' },
@@ -337,15 +357,15 @@ export const MiniMaxDirectorPage = () => {
             ],
           },
           {
-            kind: 'slider', key: 'shift_video', label: 'Video shift', min: 1, max: 30, step: 0.5, defaultValue: 12,
+            kind: 'slider', key: 'shift_video', label: 'Video shift', advanced: true, min: 1, max: 30, step: 0.5, defaultValue: 12,
             hint: 'Flow sigma shift for the video stream. H3 was tuned at 12; moving it far changes motion character.',
           },
           {
-            kind: 'slider', key: 'shift_audio', label: 'Audio shift', min: 0.5, max: 15, step: 0.5, defaultValue: 3,
+            kind: 'slider', key: 'shift_audio', label: 'Audio shift', advanced: true, min: 0.5, max: 15, step: 0.5, defaultValue: 3,
             hint: 'The same for the audio stream. H3 default is 3.',
           },
           {
-            kind: 'chips', key: 'ref_image_size', label: 'Reference detail', defaultValue: 'match',
+            kind: 'chips', key: 'ref_image_size', label: 'Reference detail', advanced: true, defaultValue: 'match',
             hint: 'Only used with references on. "Match" scales references to the output size and is fast; '
                 + '"Max" keeps a 2048px short edge for identity and costs real time.',
             options: [
@@ -354,7 +374,7 @@ export const MiniMaxDirectorPage = () => {
             ],
           },
           {
-            kind: 'chips', key: 'encoder_device', label: 'Text encoder', defaultValue: 'cpu',
+            kind: 'chips', key: 'encoder_device', label: 'Text encoder', advanced: true, defaultValue: 'cpu',
             hint: 'The encoder is 15 GB. On CPU it takes a few minutes to read the prompt before anything '
                 + 'appears to happen - that silence is normal - but it leaves the GPU for the diffusion model.',
             options: [
@@ -362,11 +382,14 @@ export const MiniMaxDirectorPage = () => {
               { label: 'GPU — fast, needs headroom', value: 'default' },
             ],
           },
-          { kind: 'seed', key: 'seed' },
+          { kind: 'seed', key: 'seed', advanced: true },
         ]}
-        extraParams={(_values, ctx) => {
+        extraParams={(values, ctx) => {
           const timeline = buildTimeline(ctx.prompt);
+          const shape = SHAPES[(values.shape as keyof typeof SHAPES)] ?? SHAPES.landscape;
           return {
+            width: shape.width,
+            height: shape.height,
             timeline_data: JSON.stringify(timeline),
             local_prompts: segments.map((s) => s.prompt.trim()).join(' | '),
             segment_lengths: segments.map((s) => Math.max(1, s.length)).join(','),
@@ -542,6 +565,18 @@ export const MiniMaxDirectorPage = () => {
               </div>
             )}
 
+            <button
+              type="button"
+              onClick={() => setShowMore(!showMore)}
+              className="flex w-full items-center justify-between rounded-md border border-white/10
+                         px-3 py-2 text-[11px] text-white/50 transition hover:text-white/80"
+            >
+              <span>Sound, references and timeline rate</span>
+              <span>{showMore ? '−' : '+'}</span>
+            </button>
+
+            {showMore && (
+            <>
             {/* ---- sound ---- */}
             <div className="workflow-section">
               <div className="workflow-section-header">
@@ -720,6 +755,8 @@ export const MiniMaxDirectorPage = () => {
               <input type="range" min={8} max={30} step={1} value={fps}
                      onChange={(e) => setFps(+e.target.value)} className="w-full" />
             </div>
+            </>
+            )}
           </div>
         )}
         generateLabel="Render storyboard"
