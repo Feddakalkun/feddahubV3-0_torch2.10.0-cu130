@@ -5,7 +5,7 @@
       "task": "more_detailed_caption",
       "fill_mask": true,
       "keep_model_loaded": true,
-      "max_new_tokens": 3000,
+      "max_new_tokens": 256,
       "num_beams": 10,
       "do_sample": true,
       "output_mask_select": "",
