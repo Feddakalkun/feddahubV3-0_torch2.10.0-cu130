@@ -96,6 +96,15 @@ if (-not $SilentMode) {
 }
 
 try {
+    # "Continue" for the whole git section, not just parts of it.
+    #
+    # PowerShell 5.1 turns a native program's stderr into an ErrorRecord, and
+    # under Stop that record is terminating. git announces where it fetched
+    # from on stderr, so a successful `git fetch` killed the update with
+    # "TerminatingError(git.exe): ... From https://feddakalkun.com/fedda".
+    #
+    # Every call below checks $LASTEXITCODE and throws on a real failure.
+    # That is git reporting failure; stderr is git talking.
     $ErrorActionPreference = "Continue"
     # Try every mirror, not just origin. One host removing the repository
     # should cost a retry, not the whole distribution - and repointing here
@@ -106,11 +115,8 @@ try {
 
     $FetchedFrom = ""
     foreach ($Url in $Mirrors) {
-        $ErrorActionPreference = "Continue"
         & $GitExe fetch $Url main 2>&1 | Out-Null
-        $Ok = ($LASTEXITCODE -eq 0)
-        $ErrorActionPreference = "Stop"
-        if ($Ok) { $FetchedFrom = $Url; break }
+        if ($LASTEXITCODE -eq 0) { $FetchedFrom = $Url; break }
         if (-not $SilentMode) {
             Write-Host "  $Url did not answer - trying the next source..." -ForegroundColor DarkGray
         }
@@ -149,7 +155,6 @@ try {
 
     $Ahead = if ($CanCompare) { & $GitExe rev-list --count origin/main..HEAD 2>$null } else { 0 }
     if ($CanCompare -and $LASTEXITCODE -eq 0 -and $Ahead -and [int]$Ahead -gt 0) {
-        $ErrorActionPreference = "Stop"
         if (-not $SilentMode) {
             Write-Host ""
             Write-Host "  [STOP] This clone has $Ahead commit(s) that are not on GitHub." -ForegroundColor Yellow
@@ -168,6 +173,8 @@ try {
         throw "git reset failed"
     }
     & $GitExe clean -fd 2>&1 | Out-Null
+
+    # Past every native call, so PowerShell may treat errors as fatal again.
     $ErrorActionPreference = "Stop"
     
     if (-not $SilentMode) {

@@ -3,25 +3,25 @@
     "name": "comfyui-various",
     "url": "https://github.com/jamesWalker55/comfyui-various.git",
     "folder": "comfyui-various",
-    "note": "JWImageContrast \u2014 used by V2/KLEIN-NSFW-EDIT"
+    "note": "JWImageContrast — used by V2/KLEIN-NSFW-EDIT"
   },
   {
     "name": "ComfyUI-Pixaroma",
     "url": "https://github.com/pixaroma/ComfyUI-Pixaroma.git",
     "folder": "ComfyUI-Pixaroma",
-    "note": "PixaromaCompare \u2014 before/after compare, needed by klein-inpaint. Vendored: installed here without git, so the url is provenance only."
+    "note": "PixaromaCompare — before/after compare, needed by klein-inpaint. Vendored: installed here without git, so the url is provenance only."
   },
   {
     "name": "comfyui-itools",
     "url": "https://github.com/MohammadAboulEla/ComfyUI-iTools.git",
     "folder": "comfyui-itools",
-    "note": "iToolsCompareImage \u2014 used by V2/KLEIN-9B-FACESWAP. Vendored: installed here without git, so the url is provenance only."
+    "note": "iToolsCompareImage — used by V2/KLEIN-9B-FACESWAP. Vendored: installed here without git, so the url is provenance only."
   },
   {
     "name": "WhatDreamsCost-ComfyUI",
     "url": "https://github.com/WhatDreamsCost/WhatDreamsCost-ComfyUI.git",
     "folder": "WhatDreamsCost-ComfyUI",
-    "note": "LoadAudioUI \u2014 audio-conditioned video (LTX 2.3 audio+image2video)"
+    "note": "LoadAudioUI — audio-conditioned video (LTX 2.3 audio+image2video)"
   },
   {
     "name": "ComfyUI-Manager",
@@ -34,21 +34,21 @@
     "name": "rgthree-comfy",
     "url": "https://github.com/rgthree/rgthree-comfy.git",
     "folder": "rgthree-comfy",
-    "note": "Power Lora Loader, Image Comparer \u2014 used in all z-image workflows",
+    "note": "Power Lora Loader, Image Comparer — used in all z-image workflows",
     "core": false
   },
   {
     "name": "ComfyUI-VideoHelperSuite",
     "url": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git",
     "folder": "ComfyUI-VideoHelperSuite",
-    "note": "VHS_VideoCombine, ImageBatch \u2014 all video workflows",
+    "note": "VHS_VideoCombine, ImageBatch — all video workflows",
     "core": true
   },
   {
     "name": "was-node-suite-comfyui",
     "url": "https://github.com/WASasquatch/was-node-suite-comfyui.git",
     "folder": "was-node-suite-comfyui",
-    "note": "Text Concatenate, Text Multiline, image utilities \u2014 widely used",
+    "note": "Text Concatenate, Text Multiline, image utilities — widely used",
     "core": true
   },
   {
@@ -62,14 +62,14 @@
     "name": "ComfyUI-Easy-Use",
     "url": "https://github.com/yolain/ComfyUI-Easy-Use.git",
     "folder": "ComfyUI-Easy-Use",
-    "note": "easy showAnything, easy int \u2014 common UI helpers",
+    "note": "easy showAnything, easy int — common UI helpers",
     "core": true
   },
   {
     "name": "ComfyUI-Custom-Scripts",
     "url": "https://github.com/pythongosssss/ComfyUI-Custom-Scripts.git",
     "folder": "ComfyUI-Custom-Scripts",
-    "note": "ShowText|pysssss \u2014 debug display, workflow utilities",
+    "note": "ShowText|pysssss — debug display, workflow utilities",
     "core": true
   },
   {
@@ -206,37 +206,37 @@
     "name": "mikey_nodes",
     "url": "https://github.com/bash-j/mikey_nodes.git",
     "folder": "mikey_nodes",
-    "note": "Mikey nodes \u2014 text, style, and utility nodes"
+    "note": "Mikey nodes — text, style, and utility nodes"
   },
   {
     "name": "ComfyUI-Image-Selector",
     "url": "https://github.com/SLAPaper/ComfyUI-Image-Selector.git",
     "folder": "ComfyUI-Image-Selector",
-    "note": "Image selector node \u2014 pick one image from a batch"
+    "note": "Image selector node — pick one image from a batch"
   },
   {
     "name": "ComfyUI-LTXVideo",
     "url": "https://github.com/Lightricks/ComfyUI-LTXVideo.git",
     "folder": "ComfyUI-LTXVideo",
-    "note": "LTX Video nodes \u2014 LTXVImgToVideoConditionOnly, LTXICLoRALoaderModelOnly, LTXAddVideoICLoRAGuide"
+    "note": "LTX Video nodes — LTXVImgToVideoConditionOnly, LTXICLoRALoaderModelOnly, LTXAddVideoICLoRAGuide"
   },
   {
     "name": "ComfyMath",
     "url": "https://github.com/evanspearman/ComfyMath.git",
     "folder": "ComfyMath",
-    "note": "Math expression nodes \u2014 ComfyMathExpression, CM_FloatToInt"
+    "note": "Math expression nodes — ComfyMathExpression, CM_FloatToInt"
   },
   {
     "name": "comfy_mtb",
     "url": "https://github.com/melMass/comfy_mtb.git",
     "folder": "comfy_mtb",
-    "note": "Animation-oriented nodes \u2014 MTB batch, interpolation, face tools"
+    "note": "Animation-oriented nodes — MTB batch, interpolation, face tools"
   },
   {
     "name": "CRT-Nodes",
     "url": "https://github.com/PGCRT/CRT-Nodes.git",
     "folder": "CRT-Nodes",
-    "note": "CRT collection \u2014 102 utility nodes for ComfyUI"
+    "note": "CRT collection — 102 utility nodes for ComfyUI"
   },
   {
     "name": "ComfyUI-AutoCropFaces",
@@ -344,31 +344,32 @@
     "name": "ComfyUI-FishAudioS2",
     "url": "https://github.com/Saganaki22/ComfyUI-FishAudioS2.git",
     "folder": "ComfyUI-FishAudioS2",
-    "note": "Fish Audio S2-Pro TTS \u2014 voice clone, multi-speaker, text-to-speech"
+    "note": "Fish Audio S2-Pro TTS — voice clone, multi-speaker, text-to-speech"
   },
   {
     "name": "ComfyUI-GGUF",
     "url": "https://github.com/city96/ComfyUI-GGUF.git",
     "folder": "ComfyUI-GGUF",
-    "note": "UnetLoaderGGUF \u2014 loads quantized GGUF model files (required for SCAIL-2 and other GGUF models)"
+    "note": "UnetLoaderGGUF — loads quantized GGUF model files (required for SCAIL-2 and other GGUF models)",
+    "core": true
   },
   {
     "name": "ComfyLiterals",
     "url": "https://github.com/M1kep/ComfyLiterals.git",
     "folder": "ComfyLiterals",
-    "note": "PrimitiveInt, JsonExtractString, StringReplace \u2014 primitive pass-through and JSON utility nodes (required for Ideogram workflow)"
+    "note": "PrimitiveInt, JsonExtractString, StringReplace — primitive pass-through and JSON utility nodes (required for Ideogram workflow)"
   },
   {
     "name": "ComfyUI_tinyterraNodes",
     "url": "https://github.com/TinyTerra/ComfyUI_tinyterraNodes.git",
     "folder": "ComfyUI_tinyterraNodes",
-    "note": "TT_PipeNodes pipeline bus, TT_Sampler, TT_Seed \u2014 workflow organization and pipe-passing nodes"
+    "note": "TT_PipeNodes pipeline bus, TT_Sampler, TT_Seed — workflow organization and pipe-passing nodes"
   },
   {
     "name": "cg-use-everywhere",
     "url": "https://github.com/chrisgoringe/cg-use-everywhere.git",
     "folder": "cg-use-everywhere",
-    "note": "Anything Everywhere, Prompt Everywhere, Seed Everywhere \u2014 broadcast outputs to all matching inputs without explicit wires"
+    "note": "Anything Everywhere, Prompt Everywhere, Seed Everywhere — broadcast outputs to all matching inputs without explicit wires"
   },
   {
     "name": "ComfyUI_Sonic",
