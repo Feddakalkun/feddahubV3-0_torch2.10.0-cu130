@@ -17,6 +17,53 @@ if sys.platform == "win32":
 
 logger = logging.getLogger(__name__)
 
+# Classes that end a graph, used only when ComfyUI cannot be asked. The live
+# answer comes from /object_info, where every class carries `output_node`.
+#
+# This set used to be the only answer, and it went stale the moment a workflow
+# arrived with a saver outside it: PixaromaSaveMp4 was not here, so the
+# First-Last graph pruned down to its downloader node and "succeeded" in six
+# milliseconds without rendering anything.
+_OUTPUT_TYPES_FALLBACK = frozenset({
+    "SaveImage", "VHS_VideoCombine", "SaveAnimatedWEBP",
+    "comfy_image_saver", "ETN_SendImageWebSocket",
+    "HuggingFaceDownloader",
+})
+
+_OUTPUT_TYPES_CACHE: Optional[frozenset] = None
+
+
+def comfy_output_types(timeout: float = 10.0) -> frozenset:
+    """Every class ComfyUI treats as an output node, cached for the process.
+
+    Falls back to the static set when ComfyUI is not reachable - being too
+    generous costs an unpruned payload, while being too strict deletes the
+    graph and calls it a success.
+    """
+    global _OUTPUT_TYPES_CACHE
+    if _OUTPUT_TYPES_CACHE is not None:
+        return _OUTPUT_TYPES_CACHE
+    try:
+        import urllib.request
+        url = os.environ.get("COMFY_URL", "http://127.0.0.1:8199")
+        with urllib.request.urlopen(url.rstrip("/") + "/object_info",
+                                    timeout=timeout) as r:
+            info = json.load(r)
+        found = frozenset(
+            k for k, v in info.items()
+            if isinstance(v, dict) and v.get("output_node")
+        )
+        if found:
+            _OUTPUT_TYPES_CACHE = found | _OUTPUT_TYPES_FALLBACK
+            logger.info("Output node types from ComfyUI: %d classes",
+                        len(_OUTPUT_TYPES_CACHE))
+            return _OUTPUT_TYPES_CACHE
+    except Exception as e:
+        logger.warning("Could not read output node types from ComfyUI (%s); "
+                       "using the built-in list", e)
+    return _OUTPUT_TYPES_FALLBACK
+
+
 class WorkflowService:
     def __init__(self, workflows_dir: str):
         self.workflows_dir = workflows_dir
@@ -373,26 +420,33 @@ class WorkflowService:
         # Ideogram scheduler bypass) can leave entire sub-graphs orphaned; some of those
         # orphaned nodes may have no class_type or broken references that cause ComfyUI
         # prompt validation to reject the whole payload.
-        _output_types = {
-            "SaveImage", "VHS_VideoCombine", "SaveAnimatedWEBP",
-            "comfy_image_saver", "ETN_SendImageWebSocket",
-            "HuggingFaceDownloader",
-        }
+        _output_types = comfy_output_types()
         _queue = [nid for nid, node in workflow.items()
                   if isinstance(node, dict) and node.get("class_type") in _output_types]
-        _reachable: set[str] = set(_queue)
-        while _queue:
-            _nid = _queue.pop()
-            _node = workflow.get(_nid)
-            if not isinstance(_node, dict):
-                continue
-            for _val in (_node.get("inputs") or {}).values():
-                if isinstance(_val, list) and len(_val) == 2:
-                    _dep = str(_val[0])
-                    if _dep not in _reachable and _dep in workflow:
-                        _reachable.add(_dep)
-                        _queue.append(_dep)
-        _unreachable = [nid for nid in workflow if nid not in _reachable]
+
+        # Nothing recognised as an output means the question could not be
+        # answered, not that the graph has none. Pruning on that belief deletes
+        # every node and hands ComfyUI an empty prompt it happily reports as a
+        # success.
+        if not _queue:
+            logger.warning(
+                "No output node recognised in %r - leaving the graph unpruned",
+                workflow_id)
+            _unreachable = []
+        else:
+            _reachable: set[str] = set(_queue)
+            while _queue:
+                _nid = _queue.pop()
+                _node = workflow.get(_nid)
+                if not isinstance(_node, dict):
+                    continue
+                for _val in (_node.get("inputs") or {}).values():
+                    if isinstance(_val, list) and len(_val) == 2:
+                        _dep = str(_val[0])
+                        if _dep not in _reachable and _dep in workflow:
+                            _reachable.add(_dep)
+                            _queue.append(_dep)
+            _unreachable = [nid for nid in workflow if nid not in _reachable]
         for nid in _unreachable:
             del workflow[nid]
             logger.debug("Pruned unreachable node %s", nid)

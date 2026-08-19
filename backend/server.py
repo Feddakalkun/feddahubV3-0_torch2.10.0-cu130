@@ -6138,6 +6138,54 @@ def _filename_from_download_line(parts: List[str]) -> str:
     return Path(url_path).name
 
 
+# ComfyUI is told about more than one model root - FEDDA's own, plus whatever
+# Settings > Folders points at - so "is this model here?" cannot be answered by
+# looking in one directory. It was, and pressing Generate started re-downloading
+# a 20 GB UNet that was already on disk under E:.
+#
+# The aliases are ComfyUI's own: a diffusion model may sit in `unet` or in
+# `diffusion_models`, a text encoder in `clip` or `text_encoders`, and a library
+# organised either way still has the file.
+_MODEL_FOLDER_ALIASES = {
+    "diffusion_models": ("diffusion_models", "unet"),
+    "unet": ("unet", "diffusion_models"),
+    "text_encoders": ("text_encoders", "clip"),
+    "clip": ("clip", "text_encoders"),
+}
+
+
+def _model_search_roots() -> List[Path]:
+    """Every models directory ComfyUI will search, FEDDA's own first."""
+    roots = [ROOT_DIR / "ComfyUI" / "models"]
+    try:
+        extra = str(load_settings().get("extra_models_path") or "").strip()
+        if extra:
+            p = Path(extra)
+            if p.is_dir() and p not in roots:
+                roots.append(p)
+    except Exception as e:
+        logger.warning("Could not read extra_models_path: %s", e)
+    return roots
+
+
+def _find_existing_model(folder: str, filename: str) -> Optional[Path]:
+    """The file as ComfyUI would find it, or None.
+
+    The size floor rejects a stub or an interrupted transfer: a few hundred
+    bytes of HTML error page is not a model, and treating one as present is how
+    a download gets skipped and the generation fails on a corrupt file instead.
+    """
+    for root in _model_search_roots():
+        for name in _MODEL_FOLDER_ALIASES.get(folder, (folder,)):
+            candidate = root / name / filename
+            try:
+                if candidate.is_file() and candidate.stat().st_size > 10_000:
+                    return candidate
+            except OSError:
+                continue
+    return None
+
+
 def _parse_workflow_download_links(workflow: Dict[str, Any]) -> List[Dict[str, Any]]:
     files: List[Dict[str, Any]] = []
     seen = set()
@@ -6167,8 +6215,11 @@ def _parse_workflow_download_links(workflow: Dict[str, Any]) -> List[Dict[str, A
             if key in seen:
                 continue
             seen.add(key)
+            # Where it would be downloaded to - always FEDDA's own tree.
             target = ROOT_DIR / "ComfyUI" / "models" / folder / filename
-            exists = target.exists() and target.is_file() and target.stat().st_size > 10_000
+            # Where it actually is, which may be the user's own library.
+            found = _find_existing_model(folder, filename)
+            exists = found is not None
             files.append({
                 "node_id": str(node_id),
                 "node_title": str(node_title),
@@ -6177,7 +6228,8 @@ def _parse_workflow_download_links(workflow: Dict[str, Any]) -> List[Dict[str, A
                 "filename": filename,
                 "path": str(target),
                 "exists": exists,
-                "size_bytes": target.stat().st_size if exists else 0,
+                "found_at": str(found) if found else None,
+                "size_bytes": found.stat().st_size if found else 0,
             })
     return files
 
@@ -6881,6 +6933,11 @@ async def generate(req: GenerateRequest):
                     _fn = str(_item.get("filename") or "")
                     _dest = _item.get("path")
                     if not (_url and _fn and _dest):
+                        continue
+                    # Already on disk somewhere ComfyUI searches. Asking the
+                    # downloader instead would only find FEDDA's own tree and
+                    # start fetching a file the user already has.
+                    if _item.get("exists"):
                         continue
                     _hdrs = None
                     if _dl_tok and "huggingface.co" in _url:

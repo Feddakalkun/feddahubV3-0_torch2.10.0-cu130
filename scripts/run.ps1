@@ -274,19 +274,63 @@ try {
             $ExtraModels = "$($UserPaths.extra_models_path)".Trim()
             if ($ExtraModels -and (Test-Path $ExtraModels)) {
                 $OwnModels = Join-Path $RootPath "ComfyUI\models"
-                $Yaml = @(
+                # base_path on its own adds nothing. ComfyUI pops base_path
+                # and is_default, then adds one search path per remaining
+                # key - so a section with no folder types parses cleanly and
+                # registers nothing. That is what made Settings > Folders a
+                # no-op: no error, no log line, and an empty model list.
+                #
+                # The alternate names are deliberate. Libraries put diffusion
+                # models under `unet` as often as `diffusion_models`, text
+                # encoders under `clip`, and some keep everything in
+                # `checkpoints`.
+                $Folders = @(
+                    "    checkpoints: checkpoints/",
+                    "    diffusion_models: |",
+                    "        diffusion_models/",
+                    "        unet/",
+                    "        checkpoints/",
+                    "    text_encoders: |",
+                    "        text_encoders/",
+                    "        clip/",
+                    "        checkpoints/",
+                    "    clip_vision: clip_vision/",
+                    "    vae: |",
+                    "        vae/",
+                    "        vae_approx/",
+                    "    loras: loras/",
+                    "    controlnet: controlnet/",
+                    "    upscale_models: upscale_models/",
+                    "    style_models: style_models/",
+                    "    embeddings: embeddings/",
+                    "    unet_gguf: unet_gguf/",
+                    "    llm_gguf: llm_gguf/"
+                )
+                $Yaml = (@(
                     "# Written by run.ps1 from config/runtime_settings.json.",
                     "# Edits here are replaced on every launch - use Settings > Folders.",
                     "#",
-                    "# fedda is first so downloads land in FEDDA's own tree, never in yours.",
+                    "# fedda carries is_default so it is searched first, which is",
+                    "# also where downloader nodes write - never into your library.",
                     "fedda:",
                     "    base_path: $OwnModels",
-                    "    is_default: true",
+                    "    is_default: true"
+                ) + $Folders + @(
                     "",
                     "user_models:",
                     "    base_path: $ExtraModels"
-                ) -join "`n"
-                Set-Content -Path (Join-Path $RootPath "ComfyUI\extra_model_paths.yaml") -Value $Yaml -Encoding UTF8
+                ) + $Folders) -join "`n"
+                # Not Set-Content -Encoding UTF8: in Windows PowerShell 5.1
+                # that writes a BOM, and ComfyUI feeds this file straight to
+                # PyYAML, which fails on the first character with
+                # "expected '<document start>'". ComfyUI then runs with no
+                # extra search paths and reports nothing, so Settings >
+                # Folders silently did nothing whatsoever.
+                #
+                # -Encoding utf8NoBOM does not exist before PowerShell 6.
+                $YamlPath = Join-Path $RootPath "ComfyUI\extra_model_paths.yaml"
+                [System.IO.File]::WriteAllText(
+                    $YamlPath, $Yaml, (New-Object System.Text.UTF8Encoding($false)))
                 Write-Host "  Extra models:  $ExtraModels (read-only)" -ForegroundColor DarkGray
             }
         } catch {
