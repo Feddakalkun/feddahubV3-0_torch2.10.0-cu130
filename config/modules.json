@@ -456,7 +456,9 @@
         "minimax-h3-img2vid-gguf",
         "minimax-h3-videdit-gguf",
         "minimax-h3-fflf",
-        "minimax-h3-director"
+        "minimax-h3-director",
+        "minimax-h3-audiosync",
+        "minimax-h3-ref8"
       ]
     }
   ]

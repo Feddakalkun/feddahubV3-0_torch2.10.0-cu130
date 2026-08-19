@@ -731,6 +731,32 @@ export const FEDDA_MODULES: FeddaModule[] = [
     Icon: Clapperboard,
   },
   {
+    id: 'minimax-h3-audiosync',
+    sourceModuleId: 'minimax-h3',
+    label: 'MiniMax Audio Sync',
+    description: 'A face and a recording. The mouth follows the sound, speaking or singing.',
+    area: 'video',
+    pack: 'booster',
+
+    tabs: ['minimax-h3-audiosync'],
+    workflows: ['minimax-h3-audiosync'],
+    defaultTab: 'minimax-h3-audiosync',
+    Icon: Film,
+  },
+  {
+    id: 'minimax-h3-ref8',
+    sourceModuleId: 'minimax-h3',
+    label: 'MiniMax 8 References',
+    description: 'Up to eight pictures of the same subject, so the face holds for the whole clip.',
+    area: 'video',
+    pack: 'booster',
+
+    tabs: ['minimax-h3-ref8'],
+    workflows: ['minimax-h3-ref8'],
+    defaultTab: 'minimax-h3-ref8',
+    Icon: Users,
+  },
+  {
     id: 'ltx-txt2vid',
     sourceModuleId: 'ltx-video',
     label: 'LTX Text2Vid',

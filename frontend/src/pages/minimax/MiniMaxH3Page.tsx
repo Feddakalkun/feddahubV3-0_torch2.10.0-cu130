@@ -16,9 +16,14 @@ import { WorkflowPage } from '../../components/layout/WorkflowPage';
  * First-Last Frame is the odd one out: it exists only as Int8, so it carries no
  * model-size toggle, and its graph runs the 4-step turbo LoRA at cfg 1 - which
  * is why its step default is a fraction of the others'.
+ *
+ * Audio Sync is the same: no GGUF build, turbo LoRA, few steps. It is also the
+ * only mode that takes a recording, which the model encodes into the joint
+ * audio-video latent before sampling - that is what makes the mouth follow the
+ * sound rather than inventing a mouth shape.
  */
 
-type Mode = 'txt2vid' | 'img2vid' | 'videdit' | 'fflf';
+type Mode = 'txt2vid' | 'img2vid' | 'videdit' | 'fflf' | 'audiosync';
 
 const DEFAULT_NEGATIVE = 'blurry, low quality, deformed, jitter, artifacts';
 
@@ -60,6 +65,23 @@ const MODES = {
     sized: false,
     lengthed: false,
   },
+  audiosync: {
+    quantised: false,
+    // The donor graph's portrait canvas: a face fills a tall frame better than a
+    // wide one, and this mode is almost always a face.
+    defaults: { width: 736, height: 1280, length: 124, steps: 8 },
+    workflowId: 'minimax-h3-audiosync',
+    capability: 'Audio Sync',
+    description: 'A face and a recording. The mouth follows the sound.',
+    inputs: [
+      { key: 'image', kind: 'image' as const, label: 'Face',
+        hint: 'The person who will be speaking or singing' },
+      { key: 'audio', kind: 'audio' as const, label: 'Voice',
+        hint: 'The recording to match - speech or song' },
+    ],
+    sized: true,
+    lengthed: true,
+  },
   fflf: {
     quantised: false,
     // Both frames are resized to width x height before they reach the model, so
@@ -71,8 +93,12 @@ const MODES = {
     inputs: [
       { key: 'image', kind: 'image' as const, label: 'First frame',
         hint: 'Where the clip starts' },
+      // Optional, which turns this page into first-frame-only when it is left
+      // empty - the node declares last_frame optional, and the canvas has a
+      // separate "FF (First Frame)" group that this makes redundant.
       { key: 'image2', kind: 'image' as const, label: 'Last frame',
-        hint: 'Where it has to arrive' },
+        hint: 'Where it has to arrive. Leave it empty to let the clip go where it likes.',
+        optional: true },
     ],
     sized: true,
     lengthed: true,
@@ -110,7 +136,8 @@ export const MiniMaxH3Page = ({ mode }: { mode: Mode }) => {
         negative: { placeholder: DEFAULT_NEGATIVE },
         rows: 4,
       }}
-      promptBuilder={{ imageKey: mode === 'img2vid' || mode === 'fflf' ? 'image' : undefined }}
+      promptBuilder={{ imageKey:
+        mode === 'img2vid' || mode === 'fflf' || mode === 'audiosync' ? 'image' : undefined }}
       settings={[
         { kind: 'slider', key: 'width', label: 'Width', min: 256, max: 1536, step: 32, defaultValue: config.defaults.width },
         ...(config.sized

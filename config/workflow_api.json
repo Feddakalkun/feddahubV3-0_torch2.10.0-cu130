@@ -3644,6 +3644,188 @@
       }
     }
   },
+  "minimax-h3-audiosync": {
+    "name": "MiniMax H3 Audio Sync",
+    "filename": "minimax/MINIMAXH3AUDIOSYNC.json",
+    "description": "Give it a face and a recording; the mouth follows the sound. Speaking or singing, the difference is what you write.",
+    "inputs": {
+      "prompt": {
+        "node_id": "138",
+        "input_key": "value",
+        "type": "string",
+        "label": "Prompt"
+      },
+      "image": {
+        "node_id": "137",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference"
+      },
+      "audio": {
+        "node_id": "400",
+        "input_key": "audio",
+        "type": "string",
+        "label": "Voice"
+      },
+      "width": {
+        "node_id": "136",
+        "input_key": "width",
+        "type": "number",
+        "label": "Width"
+      },
+      "height": {
+        "node_id": "136",
+        "input_key": "height",
+        "type": "number",
+        "label": "Height"
+      },
+      "length": {
+        "node_id": "136",
+        "input_key": "length",
+        "type": "number",
+        "label": "Frames"
+      },
+      "seed": {
+        "node_id": "129",
+        "input_key": "noise_seed",
+        "type": "number",
+        "label": "Seed"
+      },
+      "steps": {
+        "node_id": "124",
+        "input_key": "steps",
+        "type": "number",
+        "label": "Steps"
+      },
+      "frame_rate": {
+        "node_id": "159",
+        "input_key": "frame_rate",
+        "type": "number",
+        "label": "FPS"
+      },
+      "ref_image_size": {
+        "node_id": "136",
+        "input_key": "ref_image_size",
+        "type": "string",
+        "label": "Reference detail"
+      },
+      "encoder_device": {
+        "node_id": "128",
+        "input_key": "device",
+        "type": "string",
+        "label": "Text encoder"
+      }
+    }
+  },
+  "minimax-h3-ref8": {
+    "name": "MiniMax H3 8 References",
+    "filename": "minimax/MINIMAXH3REF8.json",
+    "description": "Up to eight reference pictures of the same subject, so it keeps the face across the whole clip.",
+    "inputs": {
+      "prompt": {
+        "node_id": "138",
+        "input_key": "value",
+        "type": "string",
+        "label": "Prompt"
+      },
+      "width": {
+        "node_id": "136",
+        "input_key": "width",
+        "type": "number",
+        "label": "Width"
+      },
+      "height": {
+        "node_id": "136",
+        "input_key": "height",
+        "type": "number",
+        "label": "Height"
+      },
+      "length": {
+        "node_id": "136",
+        "input_key": "length",
+        "type": "number",
+        "label": "Frames"
+      },
+      "seed": {
+        "node_id": "129",
+        "input_key": "noise_seed",
+        "type": "number",
+        "label": "Seed"
+      },
+      "steps": {
+        "node_id": "124",
+        "input_key": "steps",
+        "type": "number",
+        "label": "Steps"
+      },
+      "frame_rate": {
+        "node_id": "159",
+        "input_key": "frame_rate",
+        "type": "number",
+        "label": "FPS"
+      },
+      "ref_image_size": {
+        "node_id": "136",
+        "input_key": "ref_image_size",
+        "type": "string",
+        "label": "Reference detail"
+      },
+      "encoder_device": {
+        "node_id": "128",
+        "input_key": "device",
+        "type": "string",
+        "label": "Text encoder"
+      },
+      "image": {
+        "node_id": "137",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 1"
+      },
+      "image2": {
+        "node_id": "139",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 2"
+      },
+      "image3": {
+        "node_id": "142",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 3"
+      },
+      "image4": {
+        "node_id": "143",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 4"
+      },
+      "image5": {
+        "node_id": "144",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 5"
+      },
+      "image6": {
+        "node_id": "145",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 6"
+      },
+      "image7": {
+        "node_id": "146",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 7"
+      },
+      "image8": {
+        "node_id": "147",
+        "input_key": "image",
+        "type": "string",
+        "label": "Reference 8"
+      }
+    }
+  },
   "minimax-h3-txt2vid-gguf": {
     "name": "MiniMax H3 Text to Video (GGUF)",
     "filename": "minimax/MINIMAXH3txt2video-gguf.json",
