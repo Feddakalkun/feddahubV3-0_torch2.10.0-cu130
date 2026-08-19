@@ -8,6 +8,7 @@ import { InfoTip } from '../../components/ui/InfoTip';
 import { useToast } from '../../components/ui/Toast';
 import { BACKEND_API } from '../../config/api';
 import { usePersistentState } from '../../hooks/usePersistentState';
+import { DirectorTimeline } from '../../components/workflows/DirectorTimeline';
 
 /**
  * MiniMax H3 Director - a storyboard, not a prompt box.
@@ -111,17 +112,24 @@ export const MiniMaxDirectorPage = () => {
     () => segments.reduce((n, s) => n + Math.max(1, s.length), 0), [segments]);
   const rendered = snapUp(totalFrames);
 
-  const upload = async (file: File, then: (filename: string) => void) => {
+  /** Uploads and returns the name ComfyUI knows the file by, or null. */
+  const uploadFile = async (file: File): Promise<string | null> => {
     try {
       const form = new FormData();
       form.append('file', file);
       const res = await fetch(`${BACKEND_API.BASE_URL}/api/upload`, { method: 'POST', body: form });
       const data = await res.json();
       if (!data.success) throw new Error(data.detail || 'Upload failed');
-      then(data.filename);
+      return data.filename as string;
     } catch (err: any) {
       toast(err.message || 'Upload failed', 'error');
+      return null;
     }
+  };
+
+  const upload = async (file: File, then: (filename: string) => void) => {
+    const name = await uploadFile(file);
+    if (name) then(name);
   };
 
   const pickFile = (accept: string, then: (filename: string) => void) => {
@@ -235,68 +243,6 @@ export const MiniMaxDirectorPage = () => {
       })),
     };
   };
-
-  const track = (clips: Clip[], colour: string) => (
-    <div className="relative h-3 overflow-hidden rounded bg-white/[0.04]">
-      {clips.map((c) => (
-        <div
-          key={c.id}
-          className={`absolute inset-y-0 rounded ${colour}`}
-          style={{
-            left: `${(c.start / Math.max(1, totalFrames)) * 100}%`,
-            width: `${(c.length / Math.max(1, totalFrames)) * 100}%`,
-          }}
-          title={c.file}
-        />
-      ))}
-    </div>
-  );
-
-  const clipList = (
-    clips: Clip[],
-    setClips: (fn: (c: Clip[]) => Clip[]) => void,
-    accept: string,
-    cap: number,
-    label: string,
-  ) => (
-    <div className="space-y-1.5">
-      {clips.map((c, i) => (
-        <div key={c.id} className="flex items-center gap-2 rounded-md border border-white/10 px-2 py-1.5">
-          <span className="flex-1 truncate text-[11px] text-white/70">{c.file}</span>
-          <input
-            type="number" value={c.start} min={0}
-            onChange={(e) => setClips((cs) => cs.map((x, j) =>
-              j === i ? { ...x, start: Math.max(0, +e.target.value) } : x))}
-            className="w-16 rounded border border-white/10 bg-black/30 px-1.5 py-0.5 text-[11px]"
-            title="Start frame"
-          />
-          <input
-            type="number" value={c.length} min={1}
-            onChange={(e) => setClips((cs) => cs.map((x, j) =>
-              j === i ? { ...x, length: Math.max(1, +e.target.value) } : x))}
-            className="w-16 rounded border border-white/10 bg-black/30 px-1.5 py-0.5 text-[11px]"
-            title="Length in frames"
-          />
-          <button type="button" onClick={() => setClips((cs) => cs.filter((_, j) => j !== i))}
-                  className="text-white/40 hover:text-white/80">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ))}
-      {clips.length < cap && (
-        <button
-          type="button"
-          onClick={() => pickFile(accept, (f) => setClips((cs) => [
-            ...cs, { id: newId(), file: f, start: 0, length: Math.min(totalFrames, fps * 3) },
-          ]))}
-          className="w-full rounded-md border border-dashed border-white/15 py-1.5 text-[11px]
-                     text-white/45 transition hover:border-white/30 hover:text-white/80"
-        >
-          + {label}
-        </button>
-      )}
-    </div>
-  );
 
   return (
     <>
@@ -431,29 +377,19 @@ export const MiniMaxDirectorPage = () => {
                 </div>
               </div>
 
-              <div className="flex h-10 gap-[2px] overflow-hidden rounded-md bg-black/30 p-[2px]">
-                {segments.map((s, i) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setSelected(i)}
-                    style={{ flexGrow: Math.max(1, s.length) }}
-                    className={`relative flex min-w-0 items-center justify-center rounded-[3px] px-1
-                      text-[10px] font-semibold transition ${
-                      i === selected
-                        ? 'bg-white/20 text-white ring-1 ring-white/40'
-                        : 'bg-white/[0.07] text-white/55 hover:bg-white/[0.12]'}`}
-                    title={s.prompt || `Shot ${i + 1}`}
-                  >
-                    <span className="truncate">{i + 1}</span>
-                    {s.imageFile && <ImageIcon className="ml-1 h-3 w-3 shrink-0 opacity-70" />}
-                    {s.isEndFrame && <Flag className="ml-0.5 h-3 w-3 shrink-0 opacity-70" />}
-                  </button>
-                ))}
-              </div>
-
-              {motion.length > 0 && <div className="mt-1">{track(motion, 'bg-sky-400/40')}</div>}
-              {audio.length > 0 && <div className="mt-1">{track(audio, 'bg-emerald-400/40')}</div>}
+              <DirectorTimeline
+                segments={segments}
+                setSegments={setSegments}
+                motion={motion}
+                setMotion={setMotion}
+                audio={audio}
+                setAudio={setAudio}
+                fps={fps}
+                selected={selected}
+                setSelected={setSelected}
+                refsOn={refsOn}
+                onUpload={uploadFile}
+              />
 
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <button type="button" onClick={addShot}
@@ -513,20 +449,6 @@ export const MiniMaxDirectorPage = () => {
                   className="w-full rounded-md border border-white/10 bg-black/30 px-2.5 py-2
                              text-[12px] text-white/85 placeholder:text-white/25"
                 />
-
-                <div className="mt-2 flex items-center gap-2">
-                  <label className="text-[11px] text-white/45">Frames</label>
-                  <input
-                    type="range" min={fps / 2} max={fps * 8} step={1} value={shot.length}
-                    onChange={(e) => patch(selected, { length: +e.target.value })}
-                    className="flex-1"
-                  />
-                  <input
-                    type="number" min={1} value={shot.length}
-                    onChange={(e) => patch(selected, { length: Math.max(1, +e.target.value) })}
-                    className="w-16 rounded border border-white/10 bg-black/30 px-1.5 py-0.5 text-[11px]"
-                  />
-                </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   {shot.imageFile ? (
@@ -639,7 +561,9 @@ export const MiniMaxDirectorPage = () => {
                         )}
                       </span>
                     </div>
-                    {clipList(motion, setMotion, 'video/*', MAX_REF_VIDEOS, 'Add a clip to copy motion from')}
+                    <p className="text-[11px] text-white/35">
+                      Drop a clip on the blue track above.
+                    </p>
                   </div>
 
                   <div>
@@ -647,7 +571,9 @@ export const MiniMaxDirectorPage = () => {
                       <Music className="h-3 w-3" /> Reference audio
                       <span className="ml-auto">{audio.length}/{MAX_REF_AUDIOS}</span>
                     </div>
-                    {clipList(audio, setAudio, 'audio/*', MAX_REF_AUDIOS, 'Add a clip to match the sound of')}
+                    <p className="text-[11px] text-white/35">
+                      Drop a file on the green track above.
+                    </p>
                   </div>
 
                   <div>
