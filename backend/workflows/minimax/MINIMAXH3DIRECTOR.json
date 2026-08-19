@@ -118,7 +118,7 @@
   "15": {
     "inputs": {
       "decode": "latent2rgb (fast)",
-      "preview_target": "node",
+      "preview_target": "both",
       "max_resolution": 512,
       "preview_frames": 24,
       "preview_fps": [
@@ -128,7 +128,7 @@
       "webp_quality": 80,
       "every_n_steps": 1,
       "max_preview_overhead": 25,
-      "suppress_default_preview": true,
+      "suppress_default_preview": false,
       "playback": "true speed",
       "minimax_preview_ui": "",
       "model": [
