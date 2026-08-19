@@ -1,4 +1,4 @@
-import { Bot, Download, Film, Images, LayoutDashboard, MessagesSquare, Sparkles, Users, Video, Volume2, Heart, Wand2, type LucideIcon } from 'lucide-react';
+import { Bot, Clapperboard, Download, Film, Images, LayoutDashboard, MessagesSquare, Sparkles, Users, Video, Volume2, Heart, Wand2, type LucideIcon } from 'lucide-react';
 
 export type ModulePack = 'core' | 'booster';
 export type ModuleArea = 'home' | 'image' | 'video' | 'system' | 'automation';
@@ -716,6 +716,19 @@ export const FEDDA_MODULES: FeddaModule[] = [
     workflows: ['minimax-h3-fflf'],
     defaultTab: 'minimax-h3-fflf',
     Icon: Film,
+  },
+  {
+    id: 'minimax-h3-director',
+    sourceModuleId: 'minimax-h3',
+    label: 'MiniMax Director',
+    description: 'Cut a clip into shots before you render it. Each shot gets its own prompt, length and keyframe, and they come out as one take with sound.',
+    area: 'home',
+    pack: 'booster',
+
+    tabs: ['minimax-h3-director'],
+    workflows: ['minimax-h3-director'],
+    defaultTab: 'minimax-h3-director',
+    Icon: Clapperboard,
   },
   {
     id: 'ltx-txt2vid',

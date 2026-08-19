@@ -21,6 +21,7 @@ import { Wan21Scail2Page } from './wan21/Wan21Scail2Page';
 import { LtxImg2VidPage } from './ltx/LtxImg2VidPage';
 import { LtxT2VPage } from './ltx/LtxT2VPage';
 import { MiniMaxH3Page } from './minimax/MiniMaxH3Page';
+import { MiniMaxDirectorPage } from './minimax/MiniMaxDirectorPage';
 import { LtxFlfPage } from './ltx/LtxFlfPage';
 import { LtxMultiFramePage } from './ltx/LtxMultiFramePage';
 import { FluxHeadSwapPage } from './fluxklein/FluxHeadSwapPage';
@@ -83,6 +84,7 @@ export const VIDEO_WORKFLOW_PAGES: Record<string, ComponentType> = {
   'minimax-h3-img2vid': () => <MiniMaxH3Page mode="img2vid" />,
   'minimax-h3-videdit': () => <MiniMaxH3Page mode="videdit" />,
   'minimax-h3-fflf': () => <MiniMaxH3Page mode="fflf" />,
+  'minimax-h3-director': () => <MiniMaxDirectorPage />,
   'ltx-img2vid': LtxImg2VidPage,
   'ltx-flf': LtxFlfPage,
   // Same workflow, conversational entry point alongside the full page.
