@@ -36,12 +36,36 @@ function Test-FeddaUpdate {
         $local = (& git -C $Root rev-parse HEAD 2>$null)
         if (-not $local) { return }
 
-        $job = Start-Job { param($r) & git -C $r ls-remote origin HEAD 2>$null } -ArgumentList $Root
-        $done = Wait-Job $job -Timeout 6
-        if (-not $done) { Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue; return }
-        $remoteLine = Receive-Job $job
-        Remove-Job $job -Force -ErrorAction SilentlyContinue
-        if (-not $remoteLine) { return }
+        # Every mirror, not just origin. Asking origin alone meant an install
+        # whose origin had gone quiet was never offered an update and never
+        # told why, while updates arrived at a source it did not think to ask.
+        # update_code.ps1 walks the same list and repoints origin to whichever
+        # one answered, so the two agree about where FEDDA comes from.
+        $mirrors = @()
+        $shared = Join-Path $PSScriptRoot "fedda_mirrors.ps1"
+        if (Test-Path $shared) {
+            try { . $shared; $mirrors = @(Get-FeddaMirrors) } catch { }
+        }
+        $current = (& git -C $Root remote get-url origin 2>$null)
+        if ($current) { $mirrors = @($current) + ($mirrors | Where-Object { $_ -ne $current }) }
+        if (-not $mirrors -or $mirrors.Count -eq 0) { $mirrors = @("origin") }
+
+        $remoteLine = $null
+        foreach ($url in $mirrors) {
+            $job = Start-Job { param($r, $u) & git -C $r ls-remote $u main 2>$null } -ArgumentList $Root, $url
+            $done = Wait-Job $job -Timeout 6
+            if ($done) { $remoteLine = Receive-Job $job }
+            else { Stop-Job $job -ErrorAction SilentlyContinue }
+            Remove-Job $job -Force -ErrorAction SilentlyContinue
+            if ($remoteLine) { break }
+        }
+        if (-not $remoteLine) {
+            # Say it. Silence here reads as "you are up to date", which is the
+            # one thing it does not know.
+            Write-Host ""
+            Write-Host "  Could not reach any update source - starting the version you have." -ForegroundColor DarkGray
+            return
+        }
 
         $remote = ($remoteLine -split "\s+")[0]
         if ($remote -and $remote -ne $local.Trim()) {
