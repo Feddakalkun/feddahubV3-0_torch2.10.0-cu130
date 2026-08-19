@@ -4,7 +4,7 @@ title FEDDA v3.0 One-Click Installer
 set "APP_NAME=FEDDA Hub v3.0"
 :: Must match installer/installer_rev.txt in the repo. Bump both together when
 :: this file changes in a way that is worth re-downloading for.
-set "INSTALLER_REV=2026-08-18.1"
+set "INSTALLER_REV=2026-08-20.1"
 set "INSTALLER_REV_URL_1=https://feddakalkun.com/installer_rev.txt"
 set "INSTALLER_REV_URL_2=https://raw.githubusercontent.com/Feddakalkun/feddahubV3-0_torch2.10.0-cu130/main/installer/installer_rev.txt"
 
@@ -491,16 +491,20 @@ if not exist "%APP_DIR%\.git" (
     echo [1/3] Cloning clean v3.0 repository into app\ ...
     echo [1/3] Cloning clean v3.0 repository into app\ ... >> "%INSTALL_LOG%"
     set "CLONED_FROM="
+    rem No --depth 1 on the clone below. A repository served as plain files over
+    rem HTTPS is the dumb protocol, which cannot do shallow clones - git refuses
+    rem with "dumb http transport does not support shallow capabilities" and the
+    rem domain mirror would fail for every new install, silently falling back to
+    rem GitHub. There is one commit here, so depth buys nothing anyway.
+    rem
+    rem This note sits outside the loop on purpose. `::` inside a parenthesised
+    rem block is not a comment - cmd reads it as a label and tries to run it,
+    rem printing "The system cannot find the drive specified" once per line while
+    rem the install carries on and reports success. Reported from a real install.
     for %%U in ("%REPO_URL_1%" "%REPO_URL_2%") do (
         if not defined CLONED_FROM (
             echo   trying %%~U
             echo   trying %%~U >> "%INSTALL_LOG%"
-            :: No --depth 1. A repository served as plain files over HTTPS is
-            :: the dumb protocol, which cannot do shallow clones - git refuses
-            :: with "dumb http transport does not support shallow capabilities"
-            :: and the domain mirror would fail for every new install, silently
-            :: falling back to GitHub. There is one commit here, so depth buys
-            :: nothing anyway.
             git clone "%%~U" "%APP_DIR%" >> "%INSTALL_LOG%" 2>&1
             if not errorlevel 1 set "CLONED_FROM=%%~U"
         )
