@@ -34,11 +34,37 @@ const TRAINED_MIN_FRAMES = 96;
 const TRAINED_MAX_FRAMES = 360;
 
 /**
- * H3 generates on a 17k+5 frame grid and rounds *up* to reach it. A timeline of
- * 120 frames renders 124, which is a fifth of a second nobody asked for at the
- * end of the last shot - worth showing rather than discovering in the file.
+ * The clip lengths H3 will actually render: the 17k+5 grid, kept inside the
+ * range it was trained on. Below 96 frames the motion stiffens and above 360 it
+ * drifts, so those are the ends rather than arbitrary limits.
  */
-const snapUp = (n: number) => (n <= 5 ? 5 : Math.ceil((n - 5) / 17) * 17 + 5);
+const CLIP_LENGTHS: number[] = (() => {
+  const out: number[] = [];
+  for (let n = 5; n <= TRAINED_MAX_FRAMES; n += 17) {
+    if (n >= TRAINED_MIN_FRAMES) out.push(n);
+  }
+  return out;
+})();
+
+/**
+ * Share `total` frames across `count` shots, keeping each at least MIN_SHOT and
+ * making the parts add up exactly. The remainder goes to the earlier shots one
+ * frame at a time, which is invisible on screen and keeps the sum honest -
+ * rounding each share independently loses or gains frames and the clip stops
+ * being a legal length.
+ */
+const MIN_SHOT = 8;
+const share = (total: number, count: number): number[] => {
+  const base = Math.max(MIN_SHOT, Math.floor(total / count));
+  const out = Array.from({ length: count }, () => base);
+  let left = total - base * count;
+  for (let i = 0; left > 0; i = (i + 1) % count) { out[i] += 1; left -= 1; }
+  for (let i = count - 1; left < 0 && i >= 0; i -= 1) {
+    const take = Math.min(-left, out[i] - MIN_SHOT);
+    out[i] -= take; left += take;
+  }
+  return out;
+};
 
 type Segment = {
   id: string;
@@ -76,8 +102,14 @@ const emptySubject = (): Subject => ({
  * anything.
  */
 /** Shots from a preset, laid end to end at the length H3 renders cleanly. */
-const shotsOf = (p: Preset): Segment[] =>
-  p.shots.map((prompt, i) => ({ id: `seg${i}`, type: 'text' as const, length: 41, prompt }));
+const DEFAULT_CLIP = 124;   // 5.17s, the shortest comfortable length on the grid
+
+const shotsOf = (p: Preset, total = DEFAULT_CLIP): Segment[] => {
+  const parts = share(total, p.shots.length);
+  return p.shots.map((prompt, i) => ({
+    id: `seg${i}`, type: 'text' as const, length: parts[i], prompt,
+  }));
+};
 
 /** The shapes H3 is actually run at, as one question instead of two sliders. */
 const SHAPES = {
@@ -256,13 +288,13 @@ export const MiniMaxDirectorPage = () => {
   // replace it without keeping a second copy here is to write the stored value
   // and let it mount again.
   const [presetNonce, setPresetNonce] = useState(0);
+  const [clip, setClip] = usePersistentState('mmx_director_clip', DEFAULT_CLIP);
 
   const fileInput = useRef<HTMLInputElement | null>(null);
   const pending = useRef<((filename: string) => void) | null>(null);
 
   const totalFrames = useMemo(
     () => segments.reduce((n, s) => n + Math.max(1, s.length), 0), [segments]);
-  const rendered = snapUp(totalFrames);
 
   /** Uploads and returns the name ComfyUI knows the file by, or null. */
   const uploadFile = async (file: File): Promise<string | null> => {
@@ -374,7 +406,7 @@ export const MiniMaxDirectorPage = () => {
     const p = PRESETS[n];
     if (!p) return;
     setPreset(n);
-    setSegments(() => shotsOf(p));
+    setSegments(() => shotsOf(p, clip));
     setSoundscape(p.soundscape);
     setSelected(0);
     try {
@@ -387,21 +419,32 @@ export const MiniMaxDirectorPage = () => {
   const patch = (i: number, p: Partial<Segment>) =>
     setSegments((s) => s.map((seg, j) => (j === i ? { ...seg, ...p } : seg)));
 
+  /** Re-divide the clip so the parts still add up to a length H3 can render. */
+  const redistribute = (segs: Segment[], total: number): Segment[] => {
+    const parts = share(total, segs.length);
+    return segs.map((s, i) => ({ ...s, length: parts[i] }));
+  };
+
+  const setClipLength = (total: number) => {
+    setClip(total);
+    setSegments((s) => redistribute(s, total));
+  };
+
   const addShot = () => {
-    setSegments((s) => [...s, { id: newId(), prompt: '', length: 62, type: 'text' }]);
+    setSegments((s) => redistribute(
+      [...s, { id: newId(), prompt: '', length: MIN_SHOT, type: 'text' }], clip));
     setSelected(segments.length);
   };
 
   const removeShot = (i: number) => {
     if (segments.length <= 1) { toast('A storyboard needs at least one shot', 'error'); return; }
-    setSegments((s) => s.filter((_, j) => j !== i));
+    setSegments((s) => redistribute(s.filter((_, j) => j !== i), clip));
     setSelected((k) => Math.max(0, Math.min(k, segments.length - 2)));
   };
 
   const duplicateShot = (i: number) => {
-    setSegments((s) => [
-      ...s.slice(0, i + 1), { ...s[i], id: newId() }, ...s.slice(i + 1),
-    ]);
+    setSegments((s) => redistribute(
+      [...s.slice(0, i + 1), { ...s[i], id: newId() }, ...s.slice(i + 1)], clip));
     setSelected(i + 1);
   };
 
@@ -653,11 +696,23 @@ export const MiniMaxDirectorPage = () => {
                 </div>
               </div>
 
-              <div className="mb-1 text-right text-[11px] text-white/45">
-                  {segments.length} shots · {totalFrames} frames · {fmt(totalFrames, fps)}
-                  {rendered !== totalFrames && (
-                    <span className="text-amber-300/80"> → renders {rendered} ({fmt(rendered, fps)})</span>
-                  )}
+              <div className="mb-1 flex flex-wrap items-center justify-end gap-2 text-[11px] text-white/45">
+                <span>{segments.length} shots</span>
+                <span className="text-white/25">·</span>
+                <label className="flex items-center gap-1.5">
+                  Clip length
+                  <select
+                    value={clip}
+                    onChange={(e) => setClipLength(+e.target.value)}
+                    className="rounded border border-white/10 bg-black/40 px-1.5 py-0.5 text-[11px]
+                               text-white/75"
+                    title="H3 renders only certain lengths; these are all of them"
+                  >
+                    {CLIP_LENGTHS.map((n) => (
+                      <option key={n} value={n}>{fmt(n, fps)} · {n}f</option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div data-tour="director-timeline">
@@ -791,18 +846,7 @@ export const MiniMaxDirectorPage = () => {
                 </button>
               </div>
 
-              {totalFrames < TRAINED_MIN_FRAMES && (
-                <p className="mt-2 text-[11px] text-amber-300/80">
-                  Under {TRAINED_MIN_FRAMES} frames is below what H3 was trained on
-                  ({fmt(TRAINED_MIN_FRAMES, fps)}) — motion tends to come out stiff.
-                </p>
-              )}
-              {totalFrames > TRAINED_MAX_FRAMES && (
-                <p className="mt-2 text-[11px] text-amber-300/80">
-                  Over {TRAINED_MAX_FRAMES} frames is past H3's trained range
-                  ({fmt(TRAINED_MAX_FRAMES, fps)}) — quality drifts toward the end.
-                </p>
-              )}
+
             </div>
           </div>
         )}

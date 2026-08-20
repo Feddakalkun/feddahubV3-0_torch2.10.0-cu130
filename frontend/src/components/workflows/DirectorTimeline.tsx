@@ -128,8 +128,22 @@ export const DirectorTimeline = ({
 
     if (d.kind === 'shots') {
       if (d.mode === 'resize-end') {
-        setSegments((s) => s.map((seg, i) =>
-          i === d.index ? { ...seg, length: Math.max(MIN_FRAMES, d.origin.length + deltaFrames) } : seg));
+        // A cut moves; the film does not get longer. Whatever this shot gains
+        // comes out of the one after it, so the clip stays a length H3 renders.
+        setSegments((s) => {
+          const next = d.index + 1;
+          if (next >= s.length) return s;
+          const room = s[next].length - MIN_FRAMES;
+          const want = d.origin.length + deltaFrames - s[d.index].length;
+          const move = Math.max(-(s[d.index].length - MIN_FRAMES), Math.min(want, room));
+          if (!move) return s;
+          return s.map((seg, i) =>
+            i === d.index ? { ...seg, length: seg.length + move }
+            : i === next ? { ...seg, length: seg.length - move }
+            : seg);
+        });
+        d.startX = e.clientX;
+        d.origin = { ...d.origin, length: d.origin.length + deltaFrames };
         return;
       }
       // Moving a shot means changing its place in the running order. Swap when
