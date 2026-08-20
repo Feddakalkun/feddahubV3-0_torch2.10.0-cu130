@@ -75,22 +75,9 @@ const emptySubject = (): Subject => ({
  * tripped its own "below what H3 was trained on" notice before anyone touched
  * anything.
  */
-const DEFAULT_SEGMENTS: Segment[] = [
-  { id: 'seg0', type: 'text', length: 41,
-    prompt: 'wide establishing shot: the rider crests the dune, engine roaring, '
-          + 'sand spraying off the rear wheel into the low sun' },
-  { id: 'seg1', type: 'text', length: 41,
-    prompt: 'cut to a low tracking shot alongside the bike, heat haze rippling, '
-          + 'the horizon tilting as she leans into the turn' },
-  { id: 'seg2', type: 'text', length: 41,
-    prompt: 'cut to a close-up on her visor, the dunes reflected in it, '
-          + 'she exhales and the engine note drops away' },
-];
-
-const EXAMPLE_PROMPT =
-  'Cinematic desert chase, late afternoon golden hour, anamorphic lens, '
-  + 'shallow depth of field, fine film grain.';
-const EXAMPLE_SOUNDSCAPE = 'wind over open sand, a distant engine';
+/** Shots from a preset, laid end to end at the length H3 renders cleanly. */
+const shotsOf = (p: Preset): Segment[] =>
+  p.shots.map((prompt, i) => ({ id: `seg${i}`, type: 'text' as const, length: 41, prompt }));
 
 /** The shapes H3 is actually run at, as one question instead of two sliders. */
 const SHAPES = {
@@ -101,49 +88,148 @@ const SHAPES = {
 
 const TOUR_STEPS: TourStep[] = [
   {
-    title: 'The Director, in one idea',
-    body: 'Every other video page here takes one prompt and gives you one shot. This one takes a '
-      + 'shot list. You describe the scene once, cut it into shots, and each shot gets its own '
-      + 'line - they come out as a single continuous take with sound.',
+    title: 'Press Render and you get a clip',
+    body: 'There is already a storyboard here - three shots of a rider in the desert. Nothing needs '
+      + 'filling in first. Run it once to see what the page makes, then change one thing and run it '
+      + 'again; that is the fastest way to learn what each part does.',
   },
   {
     target: 'workflow-prompt',
-    title: 'This is the whole clip, not the first shot',
-    body: 'The look, the place, the people - whatever stays true from the first frame to the last. '
-      + 'Do not describe a camera move or an action here; that belongs to a shot. Drop a picture on '
-      + 'this box and it writes the scene from it.',
+    title: 'Up here: what stays the same',
+    body: 'The look, the place, who is in it - anything still true in the last frame. Not what '
+      + 'happens: no camera moves, no actions. Those go in the shots below. Drop a photo on this box '
+      + 'and it writes this part for you.',
     placement: 'left',
   },
   {
     target: 'director-timeline',
-    title: 'Length is something you take hold of',
-    body: 'Each block is a shot, as wide as it is long. Drag the right edge to make a shot last '
-      + 'longer; drag the block itself to move it in the running order. There is no frames field - '
-      + 'the width is the number.',
+    title: 'Down here: what happens, and when',
+    body: 'One block per shot. A wider block is a longer shot. Drag its right edge to make it last '
+      + 'longer, or drag the block itself to move it earlier or later in the clip. There is no '
+      + 'number to type - the width is the length.',
     placement: 'bottom',
   },
   {
     target: 'director-shots',
-    title: 'Drop a picture and the shot writes itself',
-    body: 'One card per shot, read left to right. Drop a photo on a card and it becomes that '
-      + "shot's keyframe and gets described into the line - with the previous shot's text sent "
-      + 'along, so it comes back written as the cut that follows rather than another wide. '
-      + 'Anything you typed yourself is never overwritten.',
+    title: 'One card per shot',
+    body: 'Write what happens in that shot: the framing, the movement, the sound. Or drop a photo on '
+      + 'the card - it becomes that shot\'s picture and writes the text for you, having read what '
+      + 'the shot before it says, so it comes out as a cut and not a fresh start. Text you wrote '
+      + 'yourself is left alone.',
     placement: 'top',
   },
   {
     target: 'director-refs',
-    title: 'Refs is a different model, not a setting',
-    body: 'Off, keyframes still work. On, you get character slots, reference video and reference '
-      + 'audio - but it loads ref2va instead of fl2va, a separate twenty-gigabyte checkpoint. It is '
-      + 'a real switch with a real cost, so leave it off until you need what it gives.',
+    title: 'Leave References off for now',
+    body: 'Photos on shots work either way. Turning it on gives you character slots, reference video '
+      + 'and reference audio - but it loads a different 20 GB model, so the first run after '
+      + 'switching is slow. Turn it on when you need to keep one face across the whole clip.',
     placement: 'top',
   },
   {
-    title: 'One number worth knowing',
-    body: "H3 renders on a fixed frame grid and rounds up, so a storyboard of 123 frames comes out "
-      + 'at 124. The counter above the shots shows both. It also warns under 96 frames, which is '
-      + 'below what the model was trained on - shorter than that and the motion goes stiff.',
+    title: 'Two numbers that will surprise you',
+    body: 'The counter above the shots shows what you built and what will actually come out. They '
+      + 'differ: 123 frames renders as 124, because the model only makes certain lengths and rounds '
+      + 'up. And under 96 frames - four seconds - the movement goes stiff, so it says so.',
+  },
+];
+
+
+/**
+ * Starting points. Three shots each, 41 frames apiece - 123, which the model
+ * rounds to 124, so none of them opens on a warning.
+ *
+ * They are deliberately different in kind, not just in subject: something fast,
+ * something at night, something still, a face, an effort, and a place with
+ * nobody in it. The examples are the only documentation most people read, so
+ * each shot names a framing, a movement and a sound.
+ */
+type Preset = { name: string; prompt: string; soundscape: string; shots: string[] };
+
+const PRESETS: Preset[] = [
+  {
+    name: 'Desert',
+    prompt: 'Cinematic desert chase, late afternoon golden hour, anamorphic lens, '
+      + 'shallow depth of field, fine film grain.',
+    soundscape: 'wind over open sand, a distant engine',
+    shots: [
+      'wide establishing shot: the rider crests the dune, engine roaring, sand spraying off '
+        + 'the rear wheel into the low sun',
+      'cut to a low tracking shot alongside the bike, heat haze rippling, the horizon tilting '
+        + 'as she leans into the turn',
+      'cut to a close-up on her visor, the dunes reflected in it, she exhales and the engine '
+        + 'note drops away',
+    ],
+  },
+  {
+    name: 'Rain city',
+    prompt: 'Night street after rain, neon signs bleeding into the wet asphalt, handheld, '
+      + '35mm, heavy shadow, cyan and magenta.',
+    soundscape: 'steady rain, tyres through standing water, a shop sign buzzing',
+    shots: [
+      'wide shot down the empty street, rain falling through a streetlight, a bus hisses past '
+        + 'left to right and its reflection breaks apart in a puddle',
+      'cut to a mid shot of a man under an awning, collar up, watching the road, the sign above '
+        + 'him flickering across his face',
+      'cut to a close-up of his hand letting a cigarette go, it hits the water and dies, the '
+        + 'rain gets louder',
+    ],
+  },
+  {
+    name: 'Kitchen',
+    prompt: 'A small kitchen early in the morning, low sun through a window, warm and slightly '
+      + 'overexposed, soft grain, everything still.',
+    soundscape: 'a kettle building, a clock, birds outside the glass',
+    shots: [
+      'wide shot of the kitchen, dust turning in the light from the window, nothing moving but '
+        + 'steam beginning to rise from the kettle',
+      'cut to a close-up of a hand pouring, the water darkening in the cup, steam climbing '
+        + 'through the sunlight',
+      'cut to a woman at the table with the cup, she looks up toward the window and the room '
+        + 'goes quiet as the kettle stops',
+    ],
+  },
+  {
+    name: 'First snow',
+    prompt: 'A forest under the first snow of the year, overcast, desaturated, cold blue light, '
+      + 'long lens, everything soft at the edges.',
+    soundscape: 'snow falling on branches, a crow far off, nothing else',
+    shots: [
+      'wide shot between the trunks, snow drifting down without wind, the ground already white '
+        + 'and the trees still dark',
+      'cut to a slow push in on a branch, snow building on it until it gives and the whole '
+        + 'branch drops its load',
+      'cut to a low shot along the ground, a deer steps into frame, stops, and its breath shows '
+        + 'in the cold',
+    ],
+  },
+  {
+    name: 'Gym',
+    prompt: 'A boxing gym in the late afternoon, hard overhead light, dust in the air, high '
+      + 'contrast, sweat catching the light, handheld.',
+    soundscape: 'a heavy bag under repeated impact, ragged breathing, a distant skipping rope',
+    shots: [
+      'wide shot of the gym floor, one figure working the bag, everyone else out of focus '
+        + 'behind, the bag swinging back into every hit',
+      'cut to a tight shot on the hands, wraps soaked through, the impact travelling up the '
+        + 'forearm on each strike',
+      'cut to a close-up on the face, eyes down, breathing hard, the sound of the room dropping '
+        + 'away until only the breath is left',
+    ],
+  },
+  {
+    name: 'Rooftop',
+    prompt: 'A rooftop at dusk over a large city, sky going from orange to deep blue, wide lens, '
+      + 'clean and cold, no people.',
+    soundscape: 'wind across the roof, traffic far below, an aircraft passing over',
+    shots: [
+      'wide shot across the rooftops, the last light on the far towers, wind moving a loose '
+        + 'sheet of plastic in the foreground',
+      'cut to a slow pan along the parapet, the city lights coming on in sequence below as the '
+        + 'sky darkens behind them',
+      'cut to a locked-off shot of the horizon, an aircraft crossing left to right, its lights '
+        + 'blinking, the wind rising over everything',
+    ],
   },
 ];
 
@@ -153,7 +239,7 @@ export const MiniMaxDirectorPage = () => {
   const { toast } = useToast();
 
   const [segments, setSegments] = usePersistentState<Segment[]>(
-    'mmx_director_segments_v2', DEFAULT_SEGMENTS);
+    'mmx_director_segments_v2', shotsOf(PRESETS[0]));
   const [selected, setSelected] = useState(0);
   const [motion, setMotion] = usePersistentState<Clip[]>('mmx_director_motion', []);
   const [audio, setAudio] = usePersistentState<Clip[]>('mmx_director_audio', []);
@@ -161,12 +247,18 @@ export const MiniMaxDirectorPage = () => {
     'mmx_director_subjects', [emptySubject()]);
   const [fps, setFps] = usePersistentState('mmx_director_fps', 24);
   const [refsOn, setRefsOn] = usePersistentState('mmx_director_refs', false);
-  const [soundscape, setSoundscape] = usePersistentState('mmx_director_soundscape_v2', EXAMPLE_SOUNDSCAPE);
+  const [soundscape, setSoundscape] = usePersistentState('mmx_director_soundscape_v2', PRESETS[0].soundscape);
   const [music, setMusic] = usePersistentState('mmx_director_music', '');
   const [showChars, setShowChars] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [captioning, setCaptioning] = useState<number | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+  const [preset, setPreset] = usePersistentState('mmx_director_preset', 0);
+  // Bumped when a preset is loaded, and used as WorkflowPage's key. The global
+  // prompt lives in that component's persisted state, so the only way to
+  // replace it without keeping a second copy here is to write the stored value
+  // and let it mount again.
+  const [presetNonce, setPresetNonce] = useState(0);
 
   const fileInput = useRef<HTMLInputElement | null>(null);
   const pending = useRef<((filename: string) => void) | null>(null);
@@ -234,6 +326,21 @@ export const MiniMaxDirectorPage = () => {
     fileInput.current.accept = accept;
     fileInput.current.value = '';
     fileInput.current.click();
+  };
+
+  /** Replace the whole storyboard with one of the starting points. */
+  const loadPreset = (n: number) => {
+    const p = PRESETS[n];
+    if (!p) return;
+    setPreset(n);
+    setSegments(() => shotsOf(p));
+    setSoundscape(p.soundscape);
+    setSelected(0);
+    try {
+      window.localStorage.setItem(
+        'wf_minimax-h3-director-v2_prompt', JSON.stringify(p.prompt));
+    } catch { /* a full or blocked store just leaves the old prompt */ }
+    setPresetNonce((v) => v + 1);
   };
 
   const patch = (i: number, p: Partial<Segment>) =>
@@ -358,6 +465,7 @@ export const MiniMaxDirectorPage = () => {
         }}
       />
       <WorkflowPage
+        key={presetNonce}
         workflowId="minimax-h3-director"
         storageKey="minimax-h3-director-v2"
         compactPrompt
@@ -370,7 +478,7 @@ export const MiniMaxDirectorPage = () => {
           context: 'minimax-h3-director',
           label: 'Describe the scene',
           placeholder: 'The look, the place, the people - everything true of the whole clip…',
-          defaultValue: EXAMPLE_PROMPT,
+          defaultValue: PRESETS[0].prompt,
           rows: 4,
         }}
         settings={[
@@ -472,12 +580,29 @@ export const MiniMaxDirectorPage = () => {
                     + 'slightly longer than the blocks add up to.'
                   } />
                 </div>
-                <div className="text-[11px] text-white/45">
+                <div className="flex flex-wrap items-center gap-1">
+                  {PRESETS.map((p, i) => (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => loadPreset(i)}
+                      title={`Replace the storyboard with "${p.name}"`}
+                      className={`rounded-md border px-2 py-0.5 text-[10px] transition ${
+                        preset === i
+                          ? 'border-white/25 bg-white/10 text-white/80'
+                          : 'border-white/10 text-white/40 hover:text-white/75'}`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-1 text-right text-[11px] text-white/45">
                   {segments.length} shots · {totalFrames} frames · {fmt(totalFrames, fps)}
                   {rendered !== totalFrames && (
                     <span className="text-amber-300/80"> → renders {rendered} ({fmt(rendered, fps)})</span>
                   )}
-                </div>
               </div>
 
               <div data-tour="director-timeline">
