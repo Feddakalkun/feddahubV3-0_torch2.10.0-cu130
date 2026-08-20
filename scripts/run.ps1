@@ -33,6 +33,22 @@ function Test-FeddaUpdate {
     param([string]$Root)
     try {
         if (-not (Test-Path (Join-Path $Root ".git"))) { return }
+
+        # A repair is not about the remote being ahead - it is about this
+        # install being wrong - so it runs without asking whether there is
+        # anything new.
+        if ($env:FEDDA_REPAIR -eq "1") {
+            Write-Host ""
+            Write-Host "  Repair: reinstalling node packs and dependencies." -ForegroundColor Yellow
+            Write-Host "  This takes several minutes and keeps your models and outputs." -ForegroundColor DarkGray
+            Write-Host ""
+            $R = Join-Path $Root "scripts\run_update.bat"
+            if (Test-Path $R) { & cmd /c "`"$R`"" }
+            Write-Host ""
+            Read-Host "  Repair finished. Press Enter to start FEDDA"
+            $env:FEDDA_REPAIR = $null
+            return
+        }
         $local = (& git -C $Root rev-parse HEAD 2>$null)
         if (-not $local) { return }
 

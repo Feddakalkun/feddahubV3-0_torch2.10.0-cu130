@@ -176,11 +176,32 @@ try {
         exit 2
     }
 
+    # What this update is about to change. Recorded before the reset, because
+    # afterwards there is nothing left to compare against.
+    $HeadBefore = (& $GitExe rev-parse HEAD 2>$null)
+
     & $GitExe reset --hard origin/main 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "git reset failed"
     }
     & $GitExe clean -fd 2>&1 | Out-Null
+
+    # Hand the file list to update_logic.ps1 so it can skip work nothing asked
+    # for. Written even when empty - an empty file means "nothing changed",
+    # while a missing one means "could not tell", and those are different
+    # answers that must lead to different behaviour.
+    $ChangedFile = Join-Path $RootPath "logs\.update_changed.txt"
+    $HeadAfter = (& $GitExe rev-parse HEAD 2>$null)
+    if ($HeadBefore -and $HeadAfter) {
+        $Changed = & $GitExe diff --name-only "$($HeadBefore.Trim())" "$($HeadAfter.Trim())" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            ($Changed | Out-String).Trim() | Out-File $ChangedFile -Encoding utf8 -Force
+        } else {
+            Remove-Item $ChangedFile -Force -ErrorAction SilentlyContinue
+        }
+    } else {
+        Remove-Item $ChangedFile -Force -ErrorAction SilentlyContinue
+    }
 
     # Past every native call, so PowerShell may treat errors as fatal again.
     $ErrorActionPreference = "Stop"

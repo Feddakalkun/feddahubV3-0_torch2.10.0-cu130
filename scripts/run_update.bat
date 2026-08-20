@@ -8,7 +8,10 @@ set "LOG_FILE=%ROOT_DIR%\logs\update.log"
 
 if not exist "%ROOT_DIR%\logs" mkdir "%ROOT_DIR%\logs"
 
-if exist "%ROOT_DIR%\.last_node_update" del "%ROOT_DIR%\.last_node_update" >nul 2>&1
+rem The weekly node throttle used to be deleted here, which meant it never
+rem fired: every update walked all forty-two packs. What gets done is now
+rem decided by what the update actually changed - see update_logic.ps1.
+rem FEDDA_REPAIR=1 still forces the full pass.
 
 echo [%date% %time%] FEDDA Update Starting... (logging to %LOG_FILE%)
 
