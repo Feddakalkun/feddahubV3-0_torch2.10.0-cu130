@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  Clapperboard, Plus, Trash2, Copy,
+  Clapperboard, Plus, Trash2, Copy, HelpCircle,
   Image as ImageIcon, Film, Music, X, Flag,
 } from 'lucide-react';
 import { WorkflowPage } from '../../components/layout/WorkflowPage';
@@ -9,6 +9,7 @@ import { useToast } from '../../components/ui/Toast';
 import { BACKEND_API } from '../../config/api';
 import { usePersistentState } from '../../hooks/usePersistentState';
 import { DirectorTimeline } from '../../components/workflows/DirectorTimeline';
+import { Tour, type TourStep } from '../../components/ui/Tour';
 
 /**
  * MiniMax H3 Director - a storyboard, not a prompt box.
@@ -98,6 +99,54 @@ const SHAPES = {
   square: { width: 1024, height: 1024 },
 } as const;
 
+const TOUR_STEPS: TourStep[] = [
+  {
+    title: 'The Director, in one idea',
+    body: 'Every other video page here takes one prompt and gives you one shot. This one takes a '
+      + 'shot list. You describe the scene once, cut it into shots, and each shot gets its own '
+      + 'line - they come out as a single continuous take with sound.',
+  },
+  {
+    target: 'workflow-prompt',
+    title: 'This is the whole clip, not the first shot',
+    body: 'The look, the place, the people - whatever stays true from the first frame to the last. '
+      + 'Do not describe a camera move or an action here; that belongs to a shot. Drop a picture on '
+      + 'this box and it writes the scene from it.',
+    placement: 'left',
+  },
+  {
+    target: 'director-timeline',
+    title: 'Length is something you take hold of',
+    body: 'Each block is a shot, as wide as it is long. Drag the right edge to make a shot last '
+      + 'longer; drag the block itself to move it in the running order. There is no frames field - '
+      + 'the width is the number.',
+    placement: 'bottom',
+  },
+  {
+    target: 'director-shots',
+    title: 'Drop a picture and the shot writes itself',
+    body: 'One card per shot, read left to right. Drop a photo on a card and it becomes that '
+      + "shot's keyframe and gets described into the line - with the previous shot's text sent "
+      + 'along, so it comes back written as the cut that follows rather than another wide. '
+      + 'Anything you typed yourself is never overwritten.',
+    placement: 'top',
+  },
+  {
+    target: 'director-refs',
+    title: 'Refs is a different model, not a setting',
+    body: 'Off, keyframes still work. On, you get character slots, reference video and reference '
+      + 'audio - but it loads ref2va instead of fl2va, a separate twenty-gigabyte checkpoint. It is '
+      + 'a real switch with a real cost, so leave it off until you need what it gives.',
+    placement: 'top',
+  },
+  {
+    title: 'One number worth knowing',
+    body: "H3 renders on a fixed frame grid and rounds up, so a storyboard of 123 frames comes out "
+      + 'at 124. The counter above the shots shows both. It also warns under 96 frames, which is '
+      + 'below what the model was trained on - shorter than that and the motion goes stiff.',
+  },
+];
+
 const fmt = (frames: number, fps: number) => `${(frames / fps).toFixed(2)}s`;
 
 export const MiniMaxDirectorPage = () => {
@@ -117,6 +166,7 @@ export const MiniMaxDirectorPage = () => {
   const [showChars, setShowChars] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [captioning, setCaptioning] = useState<number | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
 
   const fileInput = useRef<HTMLInputElement | null>(null);
   const pending = useRef<((filename: string) => void) | null>(null);
@@ -280,6 +330,24 @@ export const MiniMaxDirectorPage = () => {
 
   return (
     <>
+      {tourOpen
+        ? <Tour steps={TOUR_STEPS} storageKey="minimax-h3-director" open
+                onClose={() => setTourOpen(false)} />
+        : <Tour steps={TOUR_STEPS} storageKey="minimax-h3-director" auto />}
+
+      <button
+        type="button"
+        onClick={() => setTourOpen(true)}
+        title="Show the walkthrough again"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-1.5 rounded-full border
+                   border-white/10 bg-[#0b0c12]/90 px-3 py-2 text-[10px] font-bold uppercase
+                   tracking-widest text-white/45 shadow-lg backdrop-blur transition
+                   hover:border-violet-400/40 hover:text-white/85"
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+        How this works
+      </button>
+
       <input
         ref={fileInput} type="file" className="hidden"
         onChange={(e) => {
@@ -412,6 +480,7 @@ export const MiniMaxDirectorPage = () => {
                 </div>
               </div>
 
+              <div data-tour="director-timeline">
               <DirectorTimeline
                 segments={segments}
                 setSegments={setSegments}
@@ -425,8 +494,9 @@ export const MiniMaxDirectorPage = () => {
                 refsOn={refsOn}
                 onUpload={uploadFile}
               />
+              </div>
 
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              <div data-tour="director-shots" className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {segments.map((seg, i) => (
                   <div
                     key={seg.id}
@@ -610,6 +680,7 @@ export const MiniMaxDirectorPage = () => {
                 </div>
                 <button
                   type="button"
+                  data-tour="director-refs"
                   onClick={() => setRefsOn(!refsOn)}
                   className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${
                     refsOn ? 'border-white/30 bg-white/10 text-white'
