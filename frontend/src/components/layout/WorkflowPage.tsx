@@ -628,7 +628,12 @@ export const WorkflowPage = ({
           <div className="cockpit-panel">{outputPanel}</div>
         </div>
 
+        {/* Named for the component, not for the page that points at it: a
+            tour anchor in a shared file should not carry one page's name.
+            It sits above the guard rather than inside it: a JSX comment
+            cannot be the first thing in a parenthesised && expression. */}
         {prompt && (
+          <div data-tour="workflow-prompt">
           <WorkflowSection title="Prompt">
             {promptActions ? <div className="mb-2">{promptActions}</div> : null}
             {/* Two boxes side by side: writing on the left, the builder that
@@ -697,6 +702,7 @@ export const WorkflowPage = ({
             )}
             </div>
           </WorkflowSection>
+          </div>
         )}
         </div>
 
