@@ -118,6 +118,7 @@ for /f "usebackq delims=" %%A in ("%MANIFEST%") do (
 :: --- Install this workflow's custom nodes (non-core, lazy install) ---
 set "NODES_MANIFEST=%MANIFEST_DIR%\%WFID%.nodes.txt"
 set /a NODES_INSTALLED=0
+set "NODE_DEPS_FAILED=0"
 if exist "%NODES_MANIFEST%" (
     echo.
     echo ============================================================
@@ -134,7 +135,7 @@ if exist "%NODES_MANIFEST%" (
                 set "NURL=%%b"
             )
             if exist "!CUSTOM_NODES_DIR!\!NFOLDER!" (
-                echo   [!NFOLDER!] already installed
+                echo   [!NFOLDER!] already present
             ) else (
                 if exist "%APP_DIR%\vendor\custom_nodes\!NFOLDER!" (
                     echo   [!NFOLDER!] Installing from vendored copy...
@@ -143,11 +144,41 @@ if exist "%NODES_MANIFEST%" (
                     echo   [!NFOLDER!] Cloning...
                     git clone --depth 1 "!NURL!" "!CUSTOM_NODES_DIR!\!NFOLDER!"
                 )
-                if exist "!CUSTOM_NODES_DIR!\!NFOLDER!\requirements.txt" (
-                    echo   [!NFOLDER!] Installing Python deps - this can take a while...
-                    "!EMB_PY!" -m pip install -r "!CUSTOM_NODES_DIR!\!NFOLDER!\requirements.txt" --no-warn-script-location
-                )
                 set /a NODES_INSTALLED+=1
+            )
+
+            rem  Dependencies are checked whether the node was just cloned or
+            rem  was already sitting there. This used to live inside the else
+            rem  above, so a folder that existed for any reason - a clone whose
+            rem  pip step failed, an interrupted run - was called "already
+            rem  installed" and its deps were never installed. Re-running did
+            rem  not help either: it saw the folder and moved on. One user had
+            rem  LayerStyle_Advance cloned with no wget, and the node failed to
+            rem  import on every launch with no way to repair it.
+            rem
+            rem  rem, not :: - a :: inside a parenthesised block is a label, and
+            rem  cmd prints "The system cannot find the drive specified".
+            rem
+            rem  The stamp holds requirements.txt's timestamp and size, so pip
+            rem  runs once per change instead of on every launch.
+            set "NREQ=!CUSTOM_NODES_DIR!\!NFOLDER!\requirements.txt"
+            if exist "!NREQ!" (
+                set "NSTAMP=!CUSTOM_NODES_DIR!\!NFOLDER!\.fedda_deps"
+                set "NWANT=" & set "NHAVE="
+                for %%F in ("!NREQ!") do set "NWANT=%%~tF %%~zF"
+                if exist "!NSTAMP!" set /p NHAVE=<"!NSTAMP!"
+                if not "!NWANT!"=="!NHAVE!" (
+                    echo   [!NFOLDER!] Installing Python deps - this can take a while...
+                    "!EMB_PY!" -m pip install -r "!NREQ!" --no-warn-script-location
+                    if errorlevel 1 (
+                        echo   [!NFOLDER!] WARNING: some dependencies failed.
+                        echo                       The node may not load. Re-run to retry.
+                        set /a NODE_DEPS_FAILED+=1
+                    ) else (
+                        rem  Stamped only on success, so a failure retries next run.
+                        >"!NSTAMP!" echo !NWANT!
+                    )
+                )
             )
         )
     )
@@ -156,6 +187,7 @@ if exist "%NODES_MANIFEST%" (
 echo.
 echo ============================================================
 echo   DONE - %TOTAL% files processed, %FAILED% failed.
+if %NODE_DEPS_FAILED% gtr 0 echo   %NODE_DEPS_FAILED% node(s) missing Python deps - re-run to retry.
 if %FAILED% gtr 0 echo   Re-run this script to resume failed downloads.
 if %NODES_INSTALLED% gtr 0 (
     echo   %NODES_INSTALLED% new custom node package^(s^) installed.

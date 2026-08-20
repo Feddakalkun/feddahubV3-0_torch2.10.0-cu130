@@ -152,11 +152,29 @@ if (-not (Test-Path "$FrontDir\node_modules")) {
 }
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
 
+# The timeout is on silence, not on elapsed time.
+#
+# A fixed 120s deadline calls a slow start a failure. ComfyUI cold-starts by
+# importing every custom node, and on a mechanical drive that is minutes of
+# seeking, not seconds - so an install with a full node set on an HDD would be
+# declared broken while it was still working perfectly, and the user offered a
+# repair for an unrelated fault. That is worse than waiting: it invites somebody
+# to churn a healthy install.
+#
+# So progress is what resets the clock. While the log keeps growing, the start
+# is alive and we keep waiting; when it stops growing for $TimeoutSec, it is
+# genuinely stuck. $MaxWaitSec is only there so nothing can hang forever.
 function Wait-Port {
-    param([int]$Port, [string]$Name, [System.Diagnostics.Process]$Proc, [int]$TimeoutSec = 120)
+    param([int]$Port, [string]$Name, [System.Diagnostics.Process]$Proc,
+          [int]$TimeoutSec = 120, [string]$ProgressLog = "", [int]$MaxWaitSec = 1800)
+
     Write-Host "  Waiting for $Name" -NoNewline -ForegroundColor Yellow
-    $deadline = (Get-Date).AddSeconds($TimeoutSec)
-    while ((Get-Date) -lt $deadline) {
+    $started  = Get-Date
+    $lastMove = Get-Date
+    $lastSize = -1
+    $said     = $false
+
+    while ($true) {
         if ($null -ne $Proc -and $Proc.HasExited) {
             Write-Host " CRASHED (exit $($Proc.ExitCode))" -ForegroundColor Red
             return $false
@@ -167,13 +185,37 @@ function Wait-Port {
             $t.Close()
             Write-Host " ready!" -ForegroundColor Green
             return $true
-        } catch {
-            Write-Host "." -NoNewline
-            Start-Sleep -Seconds 2
+        } catch { }
+
+        # Growing log = still loading. Only silence counts against the clock.
+        if ($ProgressLog) {
+            $size = 0
+            try { $size = (Get-Item -LiteralPath $ProgressLog -ErrorAction Stop).Length } catch { }
+            if ($size -ne $lastSize) {
+                $lastSize = $size
+                $lastMove = Get-Date
+                $Script:WaitMadeProgress = $true
+            }
         }
+
+        $quiet   = ((Get-Date) - $lastMove).TotalSeconds
+        $elapsed = ((Get-Date) - $started).TotalSeconds
+
+        # Say something rather than leaving them watching dots.
+        if (-not $said -and $elapsed -gt 90) {
+            Write-Host ""
+            Write-Host "  Still loading - this is normal on a mechanical drive, or the first" -ForegroundColor DarkGray
+            Write-Host "  run after adding nodes. Waiting while it keeps making progress." -ForegroundColor DarkGray
+            Write-Host "  " -NoNewline -ForegroundColor Yellow
+            $said = $true
+        }
+
+        if ($quiet -ge $TimeoutSec)    { Write-Host " TIMEOUT (no output for $([int]$quiet)s)" -ForegroundColor Red; return $false }
+        if ($elapsed -ge $MaxWaitSec)  { Write-Host " TIMEOUT (gave up after $([int]($elapsed/60)) min)" -ForegroundColor Red; return $false }
+
+        Write-Host "." -NoNewline
+        Start-Sleep -Seconds 2
     }
-    Write-Host " TIMEOUT" -ForegroundColor Red
-    return $false
 }
 
 # Each service runs hidden; stdout+stderr go to log files that we tail back
@@ -390,7 +432,9 @@ try {
         -PassThru -NoNewWindow `
         -RedirectStandardOutput $Services[1].Out -RedirectStandardError $Services[1].Err
 
-    $comfyOk   = Wait-Port -Port 8199 -Name "ComfyUI (this can take ~30s)" -Proc $ComfyProc -TimeoutSec 120
+    $Script:WaitMadeProgress = $false
+    $comfyOk   = Wait-Port -Port 8199 -Name "ComfyUI (this can take ~30s)" -Proc $ComfyProc `
+                           -TimeoutSec 120 -ProgressLog $Services[0].Err
     $backendOk = Wait-Port -Port 8000 -Name "backend" -Proc $BackendProc -TimeoutSec 30
 
     if (-not $comfyOk) {
