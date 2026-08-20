@@ -298,6 +298,68 @@ try {
 # ============================================================================
 # 1. CUSTOM NODES - install missing / update existing (from nodes.json)
 # ============================================================================
+# ---------------------------------------------------------------------------
+# What this update needs, decided from what it changed.
+#
+# update_code.ps1 writes logs\.update_changed.txt: the paths between the commit
+# before the pull and the one after. The three expensive steps below are only
+# required by two kinds of change; anything else is a code update, and the code
+# is already on disk by the time this runs.
+#
+# The three states are different on purpose:
+#   file missing   -> could not tell, so do everything (what shipped before)
+#   file empty     -> nothing changed, so do nothing expensive
+#   file has paths -> do what those paths imply
+#
+# Missing has to mean "everything". Reading it as "nothing" would turn any
+# failure to compute the diff into an update that quietly skips its own work,
+# which is the failure this project keeps finding.
+$FeddaRepair = ($env:FEDDA_REPAIR -eq "1")
+$ChangedFile = Join-Path $RootPath "logs\.update_changed.txt"
+$ChangedKnown = Test-Path $ChangedFile
+$Changed = @()
+if ($ChangedKnown) {
+    $Changed = @(Get-Content $ChangedFile -ErrorAction SilentlyContinue |
+                 ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+
+function Test-FeddaTouched {
+    <#
+        Did this update touch anything matching these patterns? True when the
+        change set is unknown, so an unreadable diff costs a slower update
+        rather than a skipped one.
+    #>
+    param([string[]]$Patterns)
+    if ($FeddaRepair -or -not $ChangedKnown) { return $true }
+    foreach ($p in $Patterns) {
+        if ($Changed | Where-Object { $_ -like $p }) { return $true }
+    }
+    return $false
+}
+
+$NeedNodes = Test-FeddaTouched @("config/nodes.json", "config/modules.json",
+                                 "scripts/module_nodes.ps1")
+$NeedPip = Test-FeddaTouched @("scripts/install.ps1", "scripts/update_logic.ps1",
+                               "*requirements*.txt")
+$NeedFrontend = Test-FeddaTouched @("frontend/package.json",
+                                    "frontend/package-lock.json")
+
+if ($FeddaRepair) {
+    Write-Host "`n  Repair run - every step, whatever changed." -ForegroundColor Yellow
+} elseif ($ChangedKnown) {
+    if ($Changed.Count -eq 0) {
+        Write-Host "`n  Code is already current." -ForegroundColor Green
+    } else {
+        $Skipped = @()
+        if (-not $NeedNodes)    { $Skipped += "custom nodes" }
+        if (-not $NeedPip)      { $Skipped += "python deps" }
+        if (-not $NeedFrontend) { $Skipped += "frontend deps" }
+        Write-Host ("`n  {0} file(s) changed. Skipping: {1}" -f $Changed.Count,
+                    $(if ($Skipped) { $Skipped -join ", " } else { "nothing" })) `
+            -ForegroundColor DarkGray
+    }
+}
+
 $NodesConfigFile = Join-Path $RootPath "config\nodes.json"
 if (-not (Test-Path $NodesConfigFile)) {
     Write-Host "  [ERROR] config/nodes.json not found!" -ForegroundColor Red
@@ -317,11 +379,16 @@ if (-not (Test-Path $CustomNodesDir)) {
     New-Item -ItemType Directory -Path $CustomNodesDir -Force | Out-Null
 }
 
-# Smart update: only git-pull existing nodes once per week
+# Two brakes answering different questions. $NeedNodes asks whether this update
+# changed the node set at all; the weekly marker asks whether the packs have been
+# pulled recently regardless. Either saying no is enough to skip the walk.
 $NodeUpdateMarker = Join-Path $RootPath ".last_node_update"
-$NeedNodeUpdate = $true
+$NeedNodeUpdate = $NeedNodes
+if (-not $NeedNodes) {
+    Write-Host "`n[1/3] Custom nodes unchanged by this update" -ForegroundColor Green
+}
 
-if (Test-Path $NodeUpdateMarker) {
+if ($NeedNodeUpdate -and (Test-Path $NodeUpdateMarker)) {
     $LastUpdate = (Get-Item $NodeUpdateMarker).LastWriteTime
     $DaysSince = ((Get-Date) - $LastUpdate).TotalDays
     if ($DaysSince -lt 7) {
@@ -547,6 +614,9 @@ if (Test-Path $HFRetryPatch) {
 # ============================================================================
 # 1b. PATCH PYTHON DEPENDENCIES - fix known version conflicts
 # ============================================================================
+if (-not $NeedPip) {
+    Write-Host "`n[1b/3] Python dependencies unchanged by this update" -ForegroundColor Green
+} else {
 Write-Host "`n[1b/3] Patching Python dependencies..." -ForegroundColor Yellow
 
 # ComfyUI pins a handful of packages with == because its own code calls into
@@ -764,9 +834,14 @@ if ($ChatterboxMissing) {
     Write-Host "  Chatterbox TTS OK" -ForegroundColor Green
 }
 
+}
+
 # ============================================================================
 # 2. FRONTEND - npm install
 # ============================================================================
+if (-not $NeedFrontend) {
+    Write-Host "`n[2/3] Frontend dependencies unchanged by this update" -ForegroundColor Green
+} else {
 Write-Host "`n[2/3] Updating frontend dependencies..." -ForegroundColor Yellow
 $FrontendDir = Join-Path $RootPath "frontend"
 
@@ -808,6 +883,8 @@ if (Test-Path $FrontendDir) {
     }
 
     Set-Location $RootPath
+}
+
 }
 
 # ============================================================================

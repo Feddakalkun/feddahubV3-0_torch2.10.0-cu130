@@ -590,8 +590,8 @@ if "%INSTALL_OK%"=="0" (
 )
 
 :: --- Create convenience launchers in the install root ---
-echo [3/3] Creating run.bat and update.bat in the install root...
-echo [3/3] Creating run.bat and update.bat in the install root... >> "%INSTALL_LOG%"
+echo [3/3] Creating run.bat in the install root...
+echo [3/3] Creating run.bat in the install root... >> "%INSTALL_LOG%"
 
 :: Thin run.bat - launches the real one inside app\
 :: NOTE: use echo-only inside redirect blocks - other commands (cd, call, pause) get EXECUTED, not written
@@ -601,32 +601,6 @@ echo [3/3] Creating run.bat and update.bat in the install root... >> "%INSTALL_L
     echo call run.bat %%*
 ) > "%INSTALL_ROOT%\run.bat"
 
-:: Thin update.bat - for existing users (distribute this when adding new workflows)
-(
-    echo @echo off
-    echo cd /d "%%~dp0app"
-    echo echo ============================================================
-    echo echo   FEDDAKALKUN - Update for Existing Installs
-    echo echo ============================================================
-    echo echo.
-    echo echo This will:
-    echo echo   - Pull latest code and new workflow files from GitHub
-    echo echo   - Install any new custom nodes required by new workflows
-    echo echo   - Update ComfyUI core and dependencies as needed
-    echo echo.
-    echo echo Starting update...
-    echo echo.
-    echo if exist "scripts\run_update.bat" ^(
-    echo     call scripts\run_update.bat
-    echo ^) else ^(
-    echo     powershell -ExecutionPolicy Bypass -File "scripts\update_code.ps1"
-    echo ^)
-    echo echo.
-    echo echo Update finished. Check logs\update.log for details.
-    echo echo You may need to restart ComfyUI / FEDDA after this.
-    echo echo.
-    echo pause
-) > "%INSTALL_ROOT%\update.bat"
 
 :: Thin download_models.bat - per-workflow model downloads (resumable)
 (
@@ -682,7 +656,8 @@ echo.
 echo   Your shortcuts are in this folder:
 echo.
 echo     run.bat                Start FEDDA - the one you use every day.
-echo     update.bat             Get the latest version (new code + nodes).
+echo     run.bat repair         Reinstall node packs and dependencies,
+echo                            for when something is broken.
 echo     download_models.bat    OPTIONAL - pre-fetch a workflow's models
 echo                            (FEDDA can also grab them on first run).
 echo     symlink_modelfolder.bat  OPTIONAL / advanced - link a model
