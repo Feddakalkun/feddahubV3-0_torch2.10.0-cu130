@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, BrainCircuit, Loader2, Trash2, Zap, DownloadCloud, Play, KeyRound, RotateCcw, FolderCog, X } from 'lucide-react';
+import { Timer, Activity, BrainCircuit, Loader2, Trash2, Zap, DownloadCloud, Play, KeyRound, RotateCcw, FolderCog, X } from 'lucide-react';
 import { useComfyStatus } from '../../hooks/useComfyStatus';
 import { useOllamaStatus } from '../../hooks/useOllamaStatus';
 import { useComfyExecution } from '../../contexts/ComfyExecutionContext';
@@ -451,6 +451,22 @@ export const TopSystemStrip = () => {
                 />
              </div>
            </div>
+        </div>
+      )}
+
+      {/* How long the last one took.
+          elapsedMs is only reset when a run starts, never when it ends, so the
+          figure is already sitting there when the progress pill disappears -
+          it was just never shown. Pixaroma's Run Timer node keeps the same
+          number inside one workflow; this keeps it for all of them, and needs
+          no node in the graph. */}
+      {state !== 'executing' && elapsedMs > 0 && (
+        <div className="h-8 px-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-2
+                        text-xs text-slate-400"
+             title="How long the last generation took">
+          <Timer className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+          <span className="font-mono text-slate-300">{fmtDuration(elapsedMs)}</span>
+          <span className="text-[9px] uppercase tracking-wider text-slate-600">last run</span>
         </div>
       )}
 
