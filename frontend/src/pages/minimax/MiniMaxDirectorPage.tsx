@@ -34,17 +34,25 @@ const TRAINED_MIN_FRAMES = 96;
 const TRAINED_MAX_FRAMES = 360;
 
 /**
- * The clip lengths H3 will actually render: the 17k+5 grid, kept inside the
- * range it was trained on. Below 96 frames the motion stiffens and above 360 it
- * drifts, so those are the ends rather than arbitrary limits.
+ * The clip lengths H3 renders, on its 17k+5 grid.
+ *
+ * 360 frames is not a ceiling. The node is explicit that nothing caps the
+ * length and longer windows do render - what ends at the model card's 4-15s is
+ * the quality, and the clock: attention is quadratic in sequence length, so
+ * twice the frames is roughly four times the wait, and drift or looping starts
+ * to show. Cutting the list there would have hidden a choice rather than
+ * explained it, so the longer ones are offered and labelled.
  */
-const CLIP_LENGTHS: number[] = (() => {
+const LONGEST_OFFERED = 702;   // 29.25s - past this the wait stops being worth it
+
+const clipLengths = (from: number, to: number): number[] => {
   const out: number[] = [];
-  for (let n = 5; n <= TRAINED_MAX_FRAMES; n += 17) {
-    if (n >= TRAINED_MIN_FRAMES) out.push(n);
-  }
+  for (let n = 5; n <= to; n += 17) if (n >= from) out.push(n);
   return out;
-})();
+};
+
+const CLIP_LENGTHS = clipLengths(TRAINED_MIN_FRAMES, TRAINED_MAX_FRAMES);
+const LONG_CLIP_LENGTHS = clipLengths(TRAINED_MAX_FRAMES + 1, LONGEST_OFFERED);
 
 /**
  * Share `total` frames across `count` shots, keeping each at least MIN_SHOT and
@@ -706,11 +714,18 @@ export const MiniMaxDirectorPage = () => {
                     onChange={(e) => setClipLength(+e.target.value)}
                     className="rounded border border-white/10 bg-black/40 px-1.5 py-0.5 text-[11px]
                                text-white/75"
-                    title="H3 renders only certain lengths; these are all of them"
+                    title="H3 renders only these lengths. Past the trained range it still works, but attention is quadratic - twice the frames is about four times the wait"
                   >
-                    {CLIP_LENGTHS.map((n) => (
-                      <option key={n} value={n}>{fmt(n, fps)} · {n}f</option>
-                    ))}
+                    <optgroup label="What H3 was trained on">
+                      {CLIP_LENGTHS.map((n) => (
+                        <option key={n} value={n}>{fmt(n, fps)} · {n}f</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Longer — drifts, and the wait grows fast">
+                      {LONG_CLIP_LENGTHS.map((n) => (
+                        <option key={n} value={n}>{fmt(n, fps)} · {n}f</option>
+                      ))}
+                    </optgroup>
                   </select>
                 </label>
               </div>
