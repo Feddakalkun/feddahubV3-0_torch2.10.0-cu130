@@ -310,7 +310,8 @@ export const DirectorTimeline = ({
               backgroundImage: s.imageFile ? `url(${viewUrl(s.imageFile)})` : undefined,
             }}
             className={`group relative flex min-w-0 cursor-grab items-center justify-center rounded-[3px]
-              bg-cover bg-center text-[10px] font-semibold transition active:cursor-grabbing ${
+              bg-contain bg-center bg-no-repeat text-[10px] font-semibold transition
+              active:cursor-grabbing ${
               i === selected
                 ? 'ring-1 ring-white/50'
                 : 'ring-1 ring-transparent hover:ring-white/20'} ${

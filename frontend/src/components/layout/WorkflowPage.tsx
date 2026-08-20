@@ -153,6 +153,13 @@ export interface WorkflowPageProps {
    */
   extraSectionsTop?: ReactNode;
   /**
+   * Hide the Single/Multiple tabs and the output pane's own row, putting the
+   * preview beside the prompt instead. For a page with no image inputs the row
+   * is one empty column the width of the screen, and the prompt sits under it
+   * where the two cannot be seen together.
+   */
+  compactPrompt?: boolean;
+  /**
    * LoRA pickers. An array because WAN 2.2 splits high- and low-noise passes
    * into two slots, and the 2-LoRA workflows use the same shape.
    * `paramKey` is what the graph expects, e.g. lora_slot2.
@@ -194,6 +201,7 @@ export const WorkflowPage = ({
   promptBuilder,
   extraSections,
   extraSectionsTop,
+  compactPrompt,
   loras = [],
 }: WorkflowPageProps) => {
   const { toast } = useToast();
@@ -588,6 +596,8 @@ export const WorkflowPage = ({
         {/* Every input and the output are equal columns of one row, rather than
             the inputs sharing half of it - two frames were coming out a quarter
             the width of the panel opposite them. */}
+        <div className={compactPrompt && inputs.length === 0
+          ? 'grid gap-3 lg:grid-cols-2 lg:items-start' : undefined}>
         <div
           className="cockpit-io-row"
           style={{ gridTemplateColumns: `repeat(${inputs.length + 1}, minmax(0, 1fr))` }}
@@ -636,7 +646,7 @@ export const WorkflowPage = ({
                 accent="violet"
                 label={prompt.label}
                 mode={promptMode}
-                onModeChange={setPromptMode}
+                {...(compactPrompt ? {} : { onModeChange: setPromptMode })}
               />
             ) : (
               <textarea
@@ -688,6 +698,7 @@ export const WorkflowPage = ({
             </div>
           </WorkflowSection>
         )}
+        </div>
 
         {extraSectionsTop}
 

@@ -116,6 +116,7 @@ export const MiniMaxDirectorPage = () => {
   const [music, setMusic] = usePersistentState('mmx_director_music', '');
   const [showChars, setShowChars] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [captioning, setCaptioning] = useState<number | null>(null);
 
   const fileInput = useRef<HTMLInputElement | null>(null);
   const pending = useRef<((filename: string) => void) | null>(null);
@@ -142,6 +143,39 @@ export const MiniMaxDirectorPage = () => {
   const upload = async (file: File, then: (filename: string) => void) => {
     const name = await uploadFile(file);
     if (name) then(name);
+  };
+
+  /**
+   * Attach a picture to a shot and write that shot from it.
+   *
+   * The previous shot's text goes with the request. Without it the model
+   * describes the picture on its own terms and every shot comes back as an
+   * establishing shot; with it, the answer is the cut that follows.
+   */
+  const captionInto = async (i: number, file: File) => {
+    const name = await uploadFile(file);
+    if (!name) return;
+    patch(i, { imageFile: name, fileName: name, type: 'image' });
+    setSelected(i);
+    if (segments[i]?.prompt.trim()) return;   // never overwrite what someone wrote
+
+    setCaptioning(i);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('context', 'minimax-h3');
+      form.append('previous', segments[i - 1]?.prompt ?? '');
+      const res = await fetch(`${BACKEND_API.BASE_URL}/api/ollama/caption`, {
+        method: 'POST', body: form,
+      });
+      const data = await res.json();
+      if (data?.success && data.caption) patch(i, { prompt: data.caption });
+      else if (data?.detail) toast(String(data.detail), 'error');
+    } catch (err: any) {
+      toast(err.message || 'Could not write the shot from that picture', 'error');
+    } finally {
+      setCaptioning(null);
+    }
   };
 
   const pickFile = (accept: string, then: (filename: string) => void) => {
@@ -258,6 +292,7 @@ export const MiniMaxDirectorPage = () => {
       <WorkflowPage
         workflowId="minimax-h3-director"
         storageKey="minimax-h3-director-v2"
+        compactPrompt
         family="MiniMax H3"
         capability="Director"
         description="Cut a clip into shots before you render it. Each shot gets its own prompt, its own length and its own keyframe, and they come out as one continuous take with sound."
@@ -396,6 +431,12 @@ export const MiniMaxDirectorPage = () => {
                   <div
                     key={seg.id}
                     onClick={() => setSelected(i)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) void captionInto(i, f);
+                    }}
                     className={`w-[248px] shrink-0 rounded-lg border p-2.5 transition ${
                       i === selected
                         ? 'border-white/25 bg-white/[0.04]'
@@ -404,6 +445,9 @@ export const MiniMaxDirectorPage = () => {
                     <div className="mb-1.5 flex items-center gap-2">
                       <span className="text-[11px] font-semibold text-white/70">Shot {i + 1}</span>
                       <span className="text-[11px] text-white/35">{fmt(seg.length, fps)}</span>
+                      {captioning === i && (
+                        <span className="text-[10px] text-white/40">writing…</span>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); duplicateShot(i); }}
@@ -427,7 +471,7 @@ export const MiniMaxDirectorPage = () => {
                       onChange={(e) => patch(i, { prompt: e.target.value })}
                       onFocus={() => setSelected(i)}
                       rows={5}
-                      placeholder="What happens in this shot — the framing, the move, the sound…"
+                      placeholder="What happens in this shot — or drop a picture here and it writes itself"
                       className="w-full rounded-md border border-white/10 bg-black/30 px-2.5 py-2
                                  text-[12px] text-white/85 placeholder:text-white/25"
                     />
@@ -450,9 +494,17 @@ export const MiniMaxDirectorPage = () => {
                       ) : (
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation();
-                            pickFile('image/*', (f) =>
-                              patch(i, { imageFile: f, fileName: f, type: 'image' })); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const inp = document.createElement('input');
+                            inp.type = 'file';
+                            inp.accept = 'image/*';
+                            inp.onchange = () => {
+                              const f = inp.files?.[0];
+                              if (f) void captionInto(i, f);
+                            };
+                            inp.click();
+                          }}
                           className="flex items-center gap-1 rounded-md border border-dashed border-white/15
                                      px-2 py-1 text-[11px] text-white/45 transition
                                      hover:border-white/30 hover:text-white/80"

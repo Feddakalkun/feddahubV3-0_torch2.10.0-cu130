@@ -4171,7 +4171,8 @@ def _evict_vision_model() -> None:
 
 
 @app.post("/api/ollama/caption")
-async def ollama_caption_image(file: UploadFile = File(...), context: str = Form("zimage")):
+async def ollama_caption_image(file: UploadFile = File(...), context: str = Form("zimage"),
+                               previous: str = Form("")):
     """Caption an uploaded image with whichever vision provider is selected.
 
     The path still says ollama because the frontend calls it by that name; the
@@ -4191,13 +4192,25 @@ async def ollama_caption_image(file: UploadFile = File(...), context: str = Form
 
     img_bytes = _shrink_for_vision(await file.read())
 
+    # A shot that follows another one is a cut, not an establishing shot. The
+    # instruction says so only when there is something to follow.
+    instruction = _caption_prompt_for_context(context)
+    prev = (previous or "").strip()
+    if prev:
+        instruction += (
+            " This shot FOLLOWS the previous one, which read: \"" + prev[:600] + "\". "
+            "Write this as the cut that comes after it - open by naming the change "
+            "(the new framing, the new angle, what moved), and do not repeat what "
+            "the previous shot already established about the place or the wardrobe."
+        )
+
     settings = load_settings()
     if (settings.get("vision_provider") or "ollama").strip().lower() == "venice":
         try:
             text, used = venice_service.caption(
                 (settings.get("venice_api_key") or "").strip(),
                 base64.b64encode(img_bytes).decode(),
-                _caption_prompt_for_context(context),
+                instruction,
                 (settings.get("venice_vision_model") or "").strip(),
                 file.content_type or "image/png",
             )
@@ -4225,7 +4238,7 @@ async def ollama_caption_image(file: UploadFile = File(...), context: str = Form
 
     payload = {
         "model": model,
-        "prompt": _caption_prompt_for_context(context),
+        "prompt": instruction,
         "images": [img_b64],
         "stream": False,
         "keep_alive": CAPTION_KEEP_ALIVE,
