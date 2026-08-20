@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-  Clapperboard, Plus, Trash2, Copy, HelpCircle,
-  Image as ImageIcon, Film, Music, X, Flag,
+  Clapperboard, Plus, Trash2, Copy, HelpCircle, Wand2,
+  Image as ImageIcon, Film, Music, X,
 } from 'lucide-react';
 import { WorkflowPage } from '../../components/layout/WorkflowPage';
 import { InfoTip } from '../../components/ui/InfoTip';
@@ -88,49 +88,46 @@ const SHAPES = {
 
 const TOUR_STEPS: TourStep[] = [
   {
-    title: 'Press Render and you get a clip',
-    body: 'There is already a storyboard here - three shots of a rider in the desert. Nothing needs '
-      + 'filling in first. Run it once to see what the page makes, then change one thing and run it '
-      + 'again; that is the fastest way to learn what each part does.',
+    title: 'MiniMax Director',
+    body: 'Want to direct? Most video tools give you one prompt and one shot. This one gives you a '
+      + 'shot list: you set the scene once, then say what happens in each shot, and it comes back '
+      + 'as one clip with sound already on it. There is a storyboard loaded right now - press '
+      + 'Render storyboard and watch what it does. Six of them are up there to pick from.',
   },
   {
     target: 'workflow-prompt',
-    title: 'Up here: what stays the same',
-    body: 'The look, the place, who is in it - anything still true in the last frame. Not what '
-      + 'happens: no camera moves, no actions. Those go in the shots below. Drop a photo on this box '
-      + 'and it writes this part for you.',
+    title: 'Describe the scene',
+    body: 'This is the part that never changes: the look, the place, who is in it. Everything that '
+      + 'is still true in the last frame. Leave the action out - camera moves and things happening '
+      + 'belong to the shots. If you already have a picture in mind, drop it here and it writes '
+      + 'this for you.',
     placement: 'left',
   },
   {
     target: 'director-timeline',
-    title: 'Down here: what happens, and when',
-    body: 'One block per shot. A wider block is a longer shot. Drag its right edge to make it last '
-      + 'longer, or drag the block itself to move it earlier or later in the clip. There is no '
-      + 'number to type - the width is the length.',
+    title: 'Build the scene, shot by shot',
+    body: 'Each block is a shot, and its width is how long it lasts - drag the right edge to '
+      + 'stretch it, drag the block to move it earlier or later. Underneath, each shot gets a card '
+      + 'where you say what happens: the framing, the movement, the sound. Drop a photo on a card '
+      + 'and it fills the card in for you, reading the shot before it first so the result is a cut '
+      + 'and not a fresh start. Anything you typed yourself is left alone.',
     placement: 'bottom',
   },
   {
-    target: 'director-shots',
-    title: 'One card per shot',
-    body: 'Write what happens in that shot: the framing, the movement, the sound. Or drop a photo on '
-      + 'the card - it becomes that shot\'s picture and writes the text for you, having read what '
-      + 'the shot before it says, so it comes out as a cut and not a fresh start. Text you wrote '
-      + 'yourself is left alone.',
-    placement: 'top',
-  },
-  {
     target: 'director-refs',
-    title: 'Leave References off for now',
-    body: 'Photos on shots work either way. Turning it on gives you character slots, reference video '
-      + 'and reference audio - but it loads a different 20 GB model, so the first run after '
-      + 'switching is slow. Turn it on when you need to keep one face across the whole clip.',
+    title: 'References: for when a face has to stay the same',
+    body: 'Off, you already get pictures on shots - a first frame, a last frame, and a scene. On, '
+      + 'you also get character slots, reference video and reference audio, which is what you want '
+      + 'when the same person has to survive every cut. It is a different checkpoint, so the first '
+      + 'render after switching spends a minute reading it off disk. After that it costs nothing.',
     placement: 'top',
   },
   {
-    title: 'Two numbers that will surprise you',
-    body: 'The counter above the shots shows what you built and what will actually come out. They '
-      + 'differ: 123 frames renders as 124, because the model only makes certain lengths and rounds '
-      + 'up. And under 96 frames - four seconds - the movement goes stiff, so it says so.',
+    title: 'That is the whole thing',
+    body: 'Scene at the top, shots underneath, Render at the bottom. Lengths are handled for you - '
+      + 'the page only offers ones the model can actually make. Pick a storyboard, change one line, '
+      + 'run it again: that is the loop, and it is the fastest way to find out what this model is '
+      + 'good at.',
   },
 ];
 
@@ -294,12 +291,14 @@ export const MiniMaxDirectorPage = () => {
    * describes the picture on its own terms and every shot comes back as an
    * establishing shot; with it, the answer is the cut that follows.
    */
-  const captionInto = async (i: number, file: File) => {
+  const captionInto = async (i: number, file: File, force = false) => {
     const name = await uploadFile(file);
     if (!name) return;
     patch(i, { imageFile: name, fileName: name, type: 'image' });
     setSelected(i);
-    if (segments[i]?.prompt.trim()) return;   // never overwrite what someone wrote
+    // A drop never overwrites what somebody wrote; the button is somebody
+    // asking, so it does.
+    if (!force && segments[i]?.prompt.trim()) return;
 
     setCaptioning(i);
     try {
@@ -315,6 +314,48 @@ export const MiniMaxDirectorPage = () => {
       else if (data?.detail) toast(String(data.detail), 'error');
     } catch (err: any) {
       toast(err.message || 'Could not write the shot from that picture', 'error');
+    } finally {
+      setCaptioning(null);
+    }
+  };
+
+  /**
+   * Write a shot from the picture already on it. The file lives in ComfyUI's
+   * input folder, so it is fetched back rather than asked for again - the
+   * captioner wants bytes, and this is the same bytes it saw.
+   */
+  const describeAgain = async (i: number, target: 'shot' | 'scene' = 'shot') => {
+    const file = segments[i]?.imageFile;
+    if (!file) return;
+    setCaptioning(i);
+    try {
+      const img = await fetch(
+        `/comfy/view?filename=${encodeURIComponent(file)}&subfolder=&type=input`);
+      const blob = await img.blob();
+      const form = new FormData();
+      form.append('file', new File([blob], file, { type: blob.type || 'image/png' }));
+      form.append('context', target === 'scene' ? 'minimax-h3-director' : 'minimax-h3');
+      if (target === 'shot') form.append('previous', segments[i - 1]?.prompt ?? '');
+      const res = await fetch(`${BACKEND_API.BASE_URL}/api/ollama/caption`,
+                              { method: 'POST', body: form });
+      const data = await res.json();
+      if (!data?.success || !data.caption) {
+        toast(String(data?.detail || 'Nothing came back'), 'error');
+        return;
+      }
+      if (target === 'shot') {
+        patch(i, { prompt: data.caption });
+      } else {
+        // The scene box belongs to WorkflowPage, so it is written the same way
+        // a preset writes it: to the stored value, then mount again.
+        try {
+          window.localStorage.setItem(
+            'wf_minimax-h3-director-v2_prompt', JSON.stringify(data.caption));
+          setPresetNonce((v) => v + 1);
+        } catch { /* leave the old scene rather than lose it */ }
+      }
+    } catch (err: any) {
+      toast(err.message || 'Could not read that picture', 'error');
     } finally {
       setCaptioning(null);
     }
@@ -481,6 +522,20 @@ export const MiniMaxDirectorPage = () => {
           defaultValue: PRESETS[0].prompt,
           rows: 4,
         }}
+        promptActions={segments[0]?.imageFile ? (
+          <button
+            type="button"
+            onClick={() => void describeAgain(0, 'scene')}
+            disabled={captioning !== null}
+            className="flex items-center gap-1.5 rounded-md border border-white/15 px-2.5 py-1
+                       text-[11px] text-white/55 transition hover:border-white/30 hover:text-white
+                       disabled:opacity-40"
+            title="Look at the picture on shot 1 and write the scene from it"
+          >
+            <Wand2 className="h-3 w-3" />
+            {captioning !== null ? 'Reading the picture…' : 'Read the scene from shot 1'}
+          </button>
+        ) : null}
         settings={[
           {
             kind: 'chips', key: 'shape', label: 'Shape', defaultValue: 'landscape',
@@ -704,20 +759,22 @@ export const MiniMaxDirectorPage = () => {
                                      px-2 py-1 text-[11px] text-white/45 transition
                                      hover:border-white/30 hover:text-white/80"
                         >
-                          <ImageIcon className="h-3 w-3" /> Keyframe
+                          <ImageIcon className="h-3 w-3" /> Reference image
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); patch(i, { isEndFrame: !seg.isEndFrame }); }}
-                        className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition ${
-                          seg.isEndFrame
-                            ? 'border-white/30 bg-white/10 text-white'
-                            : 'border-white/10 text-white/45 hover:text-white/80'}`}
-                        title="Treat this image as the shot's closing frame rather than its opening one"
-                      >
-                        <Flag className="h-3 w-3" /> End frame
-                      </button>
+                      {seg.imageFile && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); void describeAgain(i); }}
+                          disabled={captioning === i}
+                          className="flex items-center gap-1 rounded-md border border-white/10 px-2 py-1
+                                     text-[11px] text-white/45 transition hover:text-white/80
+                                     disabled:opacity-40"
+                          title="Write this shot from the picture again, reading the shot before it"
+                        >
+                          <Wand2 className="h-3 w-3" /> Describe again
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
