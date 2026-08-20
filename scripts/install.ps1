@@ -713,7 +713,7 @@ Write-Step "Core nodes: $($NodesConfig.Count) of $($AllNodesConfig.Count) config
 $CustomNodesDir = Join-Path $ComfyDir "custom_nodes"
 if (-not (Test-Path $CustomNodesDir)) { New-Item -ItemType Directory -Path $CustomNodesDir | Out-Null }
 
-$Installed = 0; $Skipped = 0; $Failed = 0
+$Installed = 0; $Skipped = 0; $Failed = 0; $DepsFailed = @()
 
 foreach ($Node in $NodesConfig) {
     if ($Node.local -eq $true) {
@@ -747,6 +747,15 @@ foreach ($Node in $NodesConfig) {
             if (Test-Path $ReqFile) {
                 $ErrorActionPreference = "Continue"
                 & $VenvPy -m pip install -r "$ReqFile" --no-warn-script-location --quiet 2>&1 | Out-Null
+                # pip's exit code used to go into Out-Null with its output. A
+                # failed dependency install then left a node that was counted as
+                # installed, cloned and present, and broken at import time - the
+                # user finding out only from a traceback in ComfyUI's log, with
+                # nothing connecting it back to this step.
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Step "  [$($Node.name)] deps FAILED - node may not load" "Yellow"
+                    $DepsFailed += $Node.name
+                }
                 $ErrorActionPreference = "Stop"
             }
         } else {
@@ -761,6 +770,10 @@ foreach ($Node in $NodesConfig) {
 $NodeColor = "Green"
 if ($Failed -gt 0) { $NodeColor = "Yellow" }
 Write-Step "Nodes: $Installed installed, $Skipped already present, $Failed failed" $NodeColor
+if ($DepsFailed.Count) {
+    Write-Step "Dependencies failed for: $($DepsFailed -join ', ')" "Yellow"
+    Write-Step "  Those nodes will not load. Re-run the installer to retry them." "Yellow"
+}
 
 # ComfyUI pins a handful of packages with == because its own code calls into
 # them by exact signature. comfy-kitchen is the one that bites: core called
