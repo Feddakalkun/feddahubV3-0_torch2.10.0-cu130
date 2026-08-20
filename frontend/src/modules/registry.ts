@@ -46,13 +46,10 @@ export interface FeddaModule {
 export const APP_VERSION_LABEL = 'FEDDA Hub v3.0';
 export const ACTIVE_TAB_STORAGE_KEY = 'fedda_v21_active_tab';
 
-// Every card is now BUNNY CREW art at /cards/bunny/<module-id>.jpeg, so
-// replacing art is a file overwrite and never a change here. The old
-// veniceCard() helper is gone with the last module that used it.
-//
-// Cards are stills. Both renderers (RichHome, SectionCards) still handle a
-// `video` field, so adding one to a card re-enables hover playback - left off
-// because dozens of cards autoplaying is noisy and costs decode work.
+// Cards carry no art. A `card.poster` is still read by both renderers, and a
+// `video` field still enables hover playback, so either can come back by adding
+// the field and the file - but nothing ships one, and frontend/public/cards
+// does not exist here.
 
 export const FEDDA_MODULES: FeddaModule[] = [
   {
