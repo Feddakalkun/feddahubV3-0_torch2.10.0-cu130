@@ -181,7 +181,16 @@ const TOUR_STEPS: TourStep[] = [
  * nobody in it. The examples are the only documentation most people read, so
  * each shot names a framing, a movement and a sound.
  */
-type Preset = { name: string; prompt: string; soundscape: string; shots: string[] };
+type Preset = {
+  name: string;
+  prompt: string;
+  soundscape: string;
+  shots: string[];
+  /** Written for this canvas. Anything unset means landscape. */
+  shape?: 'landscape' | 'portrait' | 'square';
+  /** Score the characters cannot hear. Only worth setting when it is the point. */
+  music?: string;
+};
 
 const PRESETS: Preset[] = [
   {
@@ -252,6 +261,35 @@ const PRESETS: Preset[] = [
         + 'forearm on each strike',
       'cut to a close-up on the face, eyes down, breathing hard, the sound of the room dropping '
         + 'away until only the breath is left',
+    ],
+  },
+  {
+    name: 'Dance',
+    shape: 'portrait',
+    prompt: 'Vertical phone video, a young woman dancing in a bright bedroom, afternoon sun '
+      + 'through a window, fairy lights along the wall, slightly overexposed, shot on a phone '
+      + 'held at chest height.',
+    soundscape: 'a room with soft furnishings, feet on a rug, fabric moving, a laugh',
+    music: 'upbeat electronic pop, four-on-the-floor kick around 120 BPM, bright synth stabs '
+      + 'on the offbeat, the low end dropping out for a bar and coming back',
+    shots: [
+      'medium shot framed head to knee, she starts on the beat with a sharp shoulder roll, '
+        + 'hair swinging across her face, the phone bobbing slightly with the rhythm',
+      'she steps toward the camera into a close waist-up framing, arms crossing fast in front '
+        + 'of her, grinning straight down the lens',
+      'she spins away and back, the fairy lights streaking behind her, and lands facing the '
+        + 'camera as the music cuts',
+    ],
+  },
+  {
+    name: 'News desk',
+    prompt: 'A television news studio, a presenter behind a desk, cool even key light, a large '
+      + 'screen behind her showing a muted city skyline, shallow depth of field, broadcast look.',
+    soundscape: 'a quiet studio, air conditioning, faint paper',
+    shots: [
+      'medium shot, she looks straight down the lens and says, "Good evening. Tonight, the '
+        + 'story everyone in this city is talking about." She sets her papers down as she '
+        + 'finishes and the camera pushes in slowly',
     ],
   },
   {
@@ -416,10 +454,18 @@ export const MiniMaxDirectorPage = () => {
     setPreset(n);
     setSegments(() => shotsOf(p, clip));
     setSoundscape(p.soundscape);
+    setMusic(p.music ?? '');
     setSelected(0);
     try {
+      const K = 'wf_minimax-h3-director-v2_';
+      window.localStorage.setItem(K + 'prompt', JSON.stringify(p.prompt));
+      // The shape lives in WorkflowPage's settings, so it is merged rather than
+      // replaced - the rest of that record is steps, seed and the like, and a
+      // preset has no business resetting those. Unset means landscape, so
+      // leaving a vertical preset for a horizontal one puts the canvas back.
+      const cur = JSON.parse(window.localStorage.getItem(K + 'settings') || '{}');
       window.localStorage.setItem(
-        'wf_minimax-h3-director-v2_prompt', JSON.stringify(p.prompt));
+        K + 'settings', JSON.stringify({ ...cur, shape: p.shape ?? 'landscape' }));
     } catch { /* a full or blocked store just leaves the old prompt */ }
     setPresetNonce((v) => v + 1);
   };
