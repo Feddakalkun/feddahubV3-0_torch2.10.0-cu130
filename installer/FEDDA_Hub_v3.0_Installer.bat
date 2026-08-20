@@ -433,7 +433,8 @@ if not defined LATEST_REV (
 ) else (
     echo [WARN]  rev !INSTALLER_REV!, but !LATEST_REV! is out
     echo                                 Download this installer again from feddakalkun.com.
-    echo                                 It updates itself for nobody - update.bat cannot reach it.
+    echo                                 Nothing updates the installer itself - run.bat
+    echo                                 only updates what it installed.
 )
 
 <nul set /p "=Ollama, optional . . . . . .  "

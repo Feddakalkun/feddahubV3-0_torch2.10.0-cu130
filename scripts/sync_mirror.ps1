@@ -25,7 +25,7 @@ Write-Host ""
 Push-Location $Repo
 
 if (-not $SkipPush) {
-    Write-Host "  [1/4] Pushing to GitHub..." -ForegroundColor White
+    Write-Host "  [1/5] Pushing to GitHub..." -ForegroundColor White
     git push origin main 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) {
         # A rewritten root commit is normal here - the public repo is kept as a
@@ -35,11 +35,11 @@ if (-not $SkipPush) {
         if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] push failed" -ForegroundColor Red; Pop-Location; exit 1 }
     }
 } else {
-    Write-Host "  [1/4] Push skipped." -ForegroundColor DarkGray
+    Write-Host "  [1/5] Push skipped." -ForegroundColor DarkGray
 }
 
 $Head = (git rev-parse --short HEAD)
-Write-Host "  [2/4] Rebuilding the bare repo at $Head..." -ForegroundColor White
+Write-Host "  [2/5] Rebuilding the bare repo at $Head..." -ForegroundColor White
 
 # file:// rather than a path: a local-path clone copies every object in the
 # store, reachable or not. That once made a 4.5 MB tree into a 291 MB upload.
@@ -51,7 +51,7 @@ Push-Location $Bare
 git update-server-info                       # writes info/refs, which dumb HTTP needs
 Pop-Location
 
-Write-Host "  [3/4] Uploading to feddakalkun.com..." -ForegroundColor White
+Write-Host "  [3/5] Uploading the repo..." -ForegroundColor White
 # public/, not dist/: vite build empties dist and would take the mirror with it.
 #
 # Through cmd, not a PowerShell pipeline. PowerShell treats a pipe as text and
@@ -66,7 +66,37 @@ $remoteCmd = "rm -rf $Site/public/fedda.git $Site/dist/fedda.git && tar -xz -C $
 cmd /c "tar -cz -C ""$parent"" ""$leaf"" | ssh -o BatchMode=yes $Remote ""$remoteCmd"""
 if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] upload failed" -ForegroundColor Red; Pop-Location; exit 1 }
 
-Write-Host "  [4/4] Verifying both sources..." -ForegroundColor White
+# The installer is not in the bare repo - it is a file people download before
+# they have a repo at all, so it is served from the site root and was uploaded
+# by hand once. That meant a fix to the .bat could sit in git indefinitely while
+# the domain kept handing out the old one. Both files go up with the rest now.
+#
+# installer_rev.txt is what a running installer checks itself against, so it is
+# written last: if the .bat upload fails, the rev on the site still describes
+# the .bat on the site, and nobody is told to re-download something unchanged.
+Write-Host "  [4/5] Uploading the installer..." -ForegroundColor White
+$bat = Join-Path $Repo "installer\FEDDA_Hub_v3.0_Installer.bat"
+$rev = Join-Path $Repo "installer\installer_rev.txt"
+$batRev = (Select-String -Path $bat -Pattern 'INSTALLER_REV=([0-9.\-]+)').Matches[0].Groups[1].Value
+$fileRev = (Get-Content $rev -Raw).Trim()
+if ($batRev -ne $fileRev) {
+    Write-Host "  [ERROR] rev mismatch: .bat says $batRev, installer_rev.txt says $fileRev" -ForegroundColor Red
+    Write-Host "          Bump both together - the installer checks one against the other." -ForegroundColor Red
+    Pop-Location; exit 1
+}
+foreach ($f in @($bat, $rev)) {
+    $n = Split-Path $f -Leaf
+    # $($Remote): rather than $Remote: - a colon straight after a variable name
+    # is a drive qualifier to PowerShell, and it would send the file nowhere.
+    $dest = "$($Remote):$Site/public/$n"
+    & scp -q -o BatchMode=yes $f $dest
+    if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] upload of $n failed" -ForegroundColor Red; Pop-Location; exit 1 }
+    & ssh -o BatchMode=yes $Remote "cp $Site/public/$n $Site/dist/$n"
+    if ($LASTEXITCODE -ne 0) { Write-Host "  [ERROR] copy of $n into dist failed" -ForegroundColor Red; Pop-Location; exit 1 }
+}
+Write-Host "        rev $batRev" -ForegroundColor DarkGray
+
+Write-Host "  [5/5] Verifying both sources..." -ForegroundColor White
 $ok = $true
 foreach ($url in @("https://feddakalkun.com/fedda.git",
                    "https://github.com/Feddakalkun/feddahubV3-0_torch2.10.0-cu130.git")) {
