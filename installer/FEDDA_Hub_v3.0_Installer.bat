@@ -305,10 +305,22 @@ echo     - Set up an embedded Python + ComfyUI
 echo     - Install the required custom nodes and dependencies
 echo     - Build the FEDDA frontend
 echo.
-echo   Good to know:
-echo     - This can take 30-60 minutes on a first run
-echo     - It needs a stable internet connection
-echo     - Plan for a good amount of free disk space for models
+echo   This takes a while - usually 30 to 60 minutes.
+echo.
+echo   That is on purpose. Every custom node pack goes in now, so that
+echo   a workflow you open next week just works instead of telling you
+echo   a node is missing and leaving you to find out which ComfyUI
+echo   extension it wanted. While FEDDA is still being built, I would
+echo   rather spend your time here than have you troubleshooting
+echo   ComfyUI yourself.
+echo.
+echo   If something does go wrong, tell me. I would much rather hear
+echo   about it and fix it than have you fighting it alone - that is
+echo   how this gets better.
+echo.
+echo   Also worth knowing:
+echo     - It needs a stable internet connection all the way through
+echo     - Models are downloaded later, and they are large
 echo     - A recent NVIDIA GPU is strongly recommended
 echo.
 echo   No further input is required once it starts.
@@ -650,21 +662,20 @@ echo   ============================================================
 echo      ALL DONE  -  FEDDA is installed
 echo   ============================================================
 echo.
-echo   Your shortcuts are in this folder:
+echo     Start FEDDA:   run.bat
 echo.
-echo     run.bat                Start FEDDA - the one you use every day.
-echo     run.bat repair         Reinstall node packs and dependencies,
-echo                            for when something is broken.
-echo     download_models.bat    OPTIONAL - pre-fetch a workflow's models
-echo                            (FEDDA can also grab them on first run).
-echo     symlink_modelfolder.bat  OPTIONAL / advanced - link a model
-echo                            folder from another drive to save space.
+echo   Every node pack is installed, so the workflows are ready as they
+echo   are. Models download the first time a workflow needs one.
+echo.
+echo   Also in this folder
+echo.
+echo     run.bat repair           reinstall packs, if something breaks
+echo     download_models.bat      fetch a workflow's models up front
+echo     symlink_modelfolder.bat  use models from another drive
 echo.
 echo   ------------------------------------------------------------
-echo     To start FEDDA now, just run  run.bat
-echo   ------------------------------------------------------------
 echo.
-echo   (If something looks wrong, the full log is in  log.md)
+echo   (Full log: log.md    Summary: app\logs\install_report.txt)
 echo.
 echo   Press any key to close this window...
 pause

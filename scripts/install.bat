@@ -142,7 +142,7 @@ if exist "%FEDDA_REPORT%" (
     if not errorlevel 1 (
         echo.
         echo   [NOTE] This install is complete and passed its self-test.
-        echo          Run UPDATE.bat from the install root to update it.
+        echo          Just run run.bat - it updates itself before starting.
         echo.
         if not "%FEDDA_UNATTENDED%"=="1" pause
         exit /b 0
@@ -205,23 +205,10 @@ goto :done
 :: DONE
 :: ============================================================================
 :done
+rem  The middle layer of three says nothing to the user. It also used to type
+rem  the report to the console, which repeated a file they already have and
+rem  printed its BOM as a mojibake in the console codepage.
 echo.
-echo ============================================================================
-echo   INSTALLATION COMPLETE!
-echo ============================================================================
-echo.
-echo   To start FEDDA, run:  RUN.bat from the install root
-echo.
-echo   Log files saved to: %BASE_DIR%\logs\
-echo     - install_report.txt      Quick summary of what was installed
-echo     - install_full_log.txt    Full transcript of every command
-echo     - install_log.txt         Step-by-step progress log
-echo.
-if exist "%BASE_DIR%\logs\install_report.txt" (
-    echo   --- INSTALL REPORT ---
-    type "%BASE_DIR%\logs\install_report.txt"
-    echo   --- END REPORT ---
-    echo.
-)
+echo   Inner install finished. Report: %BASE_DIR%\logs\install_report.txt
 if not "%FEDDA_UNATTENDED%"=="1" pause
 

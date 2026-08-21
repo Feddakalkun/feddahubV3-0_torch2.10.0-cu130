@@ -99,7 +99,7 @@ function Test-FeddaUpdate {
             Write-Host ""
             $answer = Read-Host "  Press Enter to update now, or type N to skip"
             if ($answer -match '^\s*[Nn]') {
-                Write-Host "  Skipped. Run update.bat whenever you want it." -ForegroundColor DarkGray
+                Write-Host "  Skipped. Starting FEDDA again will offer it." -ForegroundColor DarkGray
                 Write-Host ""
                 return
             }
