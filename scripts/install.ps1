@@ -718,7 +718,17 @@ Write-Header "STEP 4/7 - Custom Nodes (core set)"
 # download_models.bat still installs a workflow's nodes alongside its models,
 # which is now a safety net for a pack that failed here rather than the only
 # way to get one.
-$NodesConfig = @(Get-Content (Join-Path $RootPath "config\nodes.json") | ConvertFrom-Json)
+# Assigned first, then wrapped, and not collapsed into one line.
+#
+# PowerShell 5.1's ConvertFrom-Json passes a JSON array onward as a single
+# object rather than as its elements, so @(Get-Content ... | ConvertFrom-Json)
+# yields a one-element array holding the whole list: $Node becomes all 62
+# entries at once and $Node.folder an Object[] that Join-Path refuses, which is
+# exactly how this failed. The previous code was saved from it by the
+# Where-Object it piped through - piping an array does enumerate - so removing
+# the core filter quietly removed the enumeration too.
+$AllNodesConfig = Get-Content (Join-Path $RootPath "config\nodes.json") | ConvertFrom-Json
+$NodesConfig = @($AllNodesConfig)
 Write-Step "Node packs: installing all $($NodesConfig.Count)"
 $CustomNodesDir = Join-Path $ComfyDir "custom_nodes"
 if (-not (Test-Path $CustomNodesDir)) { New-Item -ItemType Directory -Path $CustomNodesDir | Out-Null }
