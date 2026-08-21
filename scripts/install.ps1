@@ -703,13 +703,23 @@ Write-Step "All Python dependencies installed." "Green"
 # ============================================================================
 Write-Header "STEP 4/7 - Custom Nodes (core set)"
 
-# Only nodes flagged "core" in config/nodes.json install here (the ~9 packages
-# used by nearly every workflow). Workflow-specific heavy nodes (Impact-Pack,
-# LayerStyle, WanVideoWrapper, ...) install on demand via download_models.bat
-# alongside that workflow's models. This keeps the base install fast.
-$AllNodesConfig = Get-Content (Join-Path $RootPath "config\nodes.json") | ConvertFrom-Json
-$NodesConfig = @($AllNodesConfig | Where-Object { $_.core -eq $true })
-Write-Step "Core nodes: $($NodesConfig.Count) of $($AllNodesConfig.Count) configured (rest install per-workflow via download_models.bat)"
+# Every pack in config/nodes.json, not just the twelve marked core.
+#
+# Installing core only was faster and it left fifty packs on disk as
+# configuration, so the heavy workflows - WAN, LTX, LayerStyle, ControlNet -
+# opened to "node not found" and the installer's last screen had to explain
+# that the install was not finished and name a second thing to run. An install
+# that ends by assigning homework has not installed the software.
+#
+# It costs minutes rather than seconds. That is the trade, taken deliberately:
+# the slow part happens once, while the user is already waiting, instead of
+# later when they are trying to render something.
+#
+# download_models.bat still installs a workflow's nodes alongside its models,
+# which is now a safety net for a pack that failed here rather than the only
+# way to get one.
+$NodesConfig = @(Get-Content (Join-Path $RootPath "config\nodes.json") | ConvertFrom-Json)
+Write-Step "Node packs: installing all $($NodesConfig.Count)"
 $CustomNodesDir = Join-Path $ComfyDir "custom_nodes"
 if (-not (Test-Path $CustomNodesDir)) { New-Item -ItemType Directory -Path $CustomNodesDir | Out-Null }
 
@@ -1075,24 +1085,6 @@ Write-Host "         Run: RUN.bat                                     " -Foregro
 Write-Host "  ========================================================" -ForegroundColor Green
 Write-Host ""
 
-# Only the core nodes are installed above, leaving most of config/nodes.json
-# on disk. UPDATE.bat is what fetches the rest, and this screen has to say so
-# plainly.
-#
-# It used to promise that the heavy packs "download the first time you open a
-# workflow that needs them". Nothing implements that: module_service reads
-# nodes.json to report state and there is no git clone anywhere in the
-# backend. A user who believed it sat waiting for a download that never
-# started, and read "Load Diffusion Model (GGUF) not found" as a broken
-# install rather than a step nobody had taken.
-Write-Host "  What happens next" -ForegroundColor Cyan
-Write-Host "    Start with RUN.bat - the app is ready to use." -ForegroundColor Gray
-Write-Host ""
-Write-Host "    Only the shared core node packs are installed right now, which" -ForegroundColor Gray
-Write-Host "    covers the lighter workflows. The heavy ones (WAN, LTX," -ForegroundColor Gray
-Write-Host "    LayerStyle, ControlNet, ...) need packs that are not here yet," -ForegroundColor Gray
-Write-Host "    and will say a node is missing until they are." -ForegroundColor Gray
-Write-Host ""
-Write-Host "    Run UPDATE.bat once to install every pack. It takes a while" -ForegroundColor Yellow
-Write-Host "    and only has to be done once." -ForegroundColor Yellow
-Write-Host ""
+# No "what happens next" here. This is the innermost of three layers that each
+# used to announce completion, and there is nothing left to explain now that
+# every pack installs above.
