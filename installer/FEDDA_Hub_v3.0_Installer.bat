@@ -244,26 +244,22 @@ echo   on YOUR machine and generates synthetic / AI images, video
 echo   and voice. By installing and using it you agree to the
 echo   following:
 echo.
-echo   1. ADULTS ONLY. This software can produce adult content. It
-echo      is intended for users who are 18+ and legally adults in
-echo      their jurisdiction.
-echo.
-echo   2. YOUR RESPONSIBILITY. You are solely responsible for what
+echo   1. YOUR RESPONSIBILITY. You are solely responsible for what
 echo      you generate and where you publish it, and for obeying
 echo      the laws that apply to you and the terms of any platform
 echo      you post to.
 echo.
-echo   3. NO REAL PEOPLE WITHOUT CONSENT. Do not create content
+echo   2. NO REAL PEOPLE WITHOUT CONSENT. Do not create content
 echo      depicting a real, identifiable person without their
-echo      consent. Creating sexual or abusive content of anyone
-echo      who is, or appears to be, a minor is strictly forbidden
-echo      and illegal - never do this.
+echo      consent, and never anything involving a minor.
 echo.
-echo   4. THIRD-PARTY MODELS. Checkpoints, LoRAs and nodes are made
-echo      by third parties under their own licenses. You are
-echo      responsible for using them within those licenses.
+echo   3. THIRD-PARTY MODELS. Checkpoints, LoRAs and nodes are made
+echo      by third parties under their own licenses. What any given
+echo      model is capable of is a matter between you and whoever
+echo      published it. You are responsible for using them within
+echo      those licenses.
 echo.
-echo   5. LOCAL AND PRIVATE. FEDDA runs entirely on your own
+echo   4. LOCAL AND PRIVATE. FEDDA runs entirely on your own
 echo      machine. Your prompts and creations stay with you -
 echo      nothing is sent to us. It is a community project that
 echo      keeps getting better over time.
