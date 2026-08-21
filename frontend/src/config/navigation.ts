@@ -30,7 +30,7 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
     items: [
       {
         id: 'image',
-        label: 'Image Studio',
+        label: 'Image Workflows',
         icon: Sparkles,
         subitems: [
           { id: 'z-image-txt2img', label: 'Z-Image Txt2Img' },
@@ -48,7 +48,7 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
       },
       {
         id: 'video',
-        label: 'Video Studio',
+        label: 'Video Workflows',
         icon: Video,
         subitems: [
           { id: 'wan22-img2vid', label: 'WAN Img2Vid' },
@@ -84,8 +84,8 @@ const collectedTabIds = SIDEBAR_SECTIONS.flatMap((section) =>
 export const VALID_TABS = new Set<string>([...collectedTabIds, 'z-image', 'qwen', 'ltx']);
 
 export const PAGE_META: Record<string, PageMeta> = {
-  image: { label: 'Image Studio', description: 'Generate and edit images with ComfyUI workflows.', Icon: Sparkles },
-  video: { label: 'Video Studio', description: 'Create and animate videos with ComfyUI workflows.', Icon: Video },
+  image: { label: 'Image Workflows', description: 'Generate and edit images with ComfyUI workflows.', Icon: Sparkles },
+  video: { label: 'Video Workflows', description: 'Create and animate videos with ComfyUI workflows.', Icon: Video },
   gallery: { label: 'Gallery', description: 'Browse generated images and videos.', Icon: Images },
   library: { label: 'LoRA & Character', description: 'Manage character and style LoRAs.', Icon: LayoutDashboard },
   ollama: { label: 'Ollama Models', description: 'Manage local text and vision models.', Icon: Bot },

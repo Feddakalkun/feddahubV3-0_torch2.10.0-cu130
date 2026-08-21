@@ -10,7 +10,7 @@ export const ImageSectionCards = ({ onSelect, onBack, reopenFor }: ImageSectionC
   <SectionCards
     reopenFor={reopenFor}
     area="image"
-    kicker="Image Studio"
+    kicker="Image Workflows"
     title="Choose an image model"
     onSelect={onSelect}
     onBack={onBack}

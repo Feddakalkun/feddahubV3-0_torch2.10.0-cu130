@@ -20,6 +20,19 @@ const fmtDuration = (ms: number) => {
 };
 
 
+/**
+ * Every pill in this bar is the same box: same height, same padding, same type,
+ * and - the one that matters - one line.
+ *
+ * They had drifted apart, two semibold against seven medium, tints at 8% beside
+ * 10%. But the visible misalignment came from wrapping: at h-8 there is room for
+ * one line of text-xs, and "Civitai Key Missing" was taking two, which sat at a
+ * different height from "Folders" next to it. Colour stays per-pill because it
+ * carries meaning; shape does not, so shape is shared.
+ */
+const PILL = 'h-8 shrink-0 px-3 rounded-lg border text-xs font-medium '
+           + 'whitespace-nowrap transition-all flex items-center gap-1.5';
+
 export const TopSystemStrip = () => {
   const comfy = useComfyStatus(3000);
   const ollama = useOllamaStatus();
@@ -404,7 +417,7 @@ export const TopSystemStrip = () => {
 
       {/* Execution Progress Bar */}
       {state === 'executing' && (
-        <div className={`h-8 px-3 rounded-lg border flex items-center gap-2.5 ${isDownloaderNode ? 'min-w-[360px] border-amber-500/30 bg-amber-500/10' : 'min-w-[280px] border-cyan-500/30 bg-cyan-500/10'}`}>
+        <div className={`h-8 shrink-0 px-3 rounded-lg border text-xs font-medium whitespace-nowrap flex items-center gap-2.5 ${isDownloaderNode ? 'min-w-[360px] border-amber-500/30 bg-amber-500/10' : 'min-w-[280px] border-cyan-500/30 bg-cyan-500/10'}`}>
            {isDownloaderNode ? (
              <DownloadCloud className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
            ) : (
@@ -461,7 +474,7 @@ export const TopSystemStrip = () => {
           number inside one workflow; this keeps it for all of them, and needs
           no node in the graph. */}
       {state !== 'executing' && elapsedMs > 0 && (
-        <div className="h-8 px-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-2
+        <div className="h-8 shrink-0 px-3 rounded-lg border border-white/10 bg-white/5 text-xs font-medium whitespace-nowrap flex items-center gap-2
                         text-xs text-slate-400"
              title="How long the last generation took">
           <Timer className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
@@ -471,7 +484,7 @@ export const TopSystemStrip = () => {
       )}
 
       {/* GPU VRAM pill */}
-      <div className="h-8 px-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-2 text-xs">
+      <div className="h-8 shrink-0 px-3 rounded-lg border border-white/10 bg-white/5 text-xs font-medium whitespace-nowrap flex items-center gap-2">
         <Zap className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
         {gpu ? (
           <>
@@ -509,7 +522,7 @@ export const TopSystemStrip = () => {
         onClick={handlePurge}
         disabled={purging || !comfy.isConnected}
         title="Purge VRAM — unload all models"
-        className="h-8 px-3 rounded-lg border border-red-500/25 bg-red-500/8 hover:bg-red-500/18 text-red-300 text-xs font-semibold transition-all disabled:opacity-40 flex items-center gap-1.5"
+        className={`${PILL} border-red-500/25 bg-red-500/10 text-red-300 hover:bg-red-500/18 disabled:opacity-40`}
       >
         {purging ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
         {purging ? 'Purging' : 'Purge VRAM'}
@@ -520,7 +533,7 @@ export const TopSystemStrip = () => {
         id="reset-ui-btn"
         onClick={handleResetUi}
         title="Reset UI — clear saved prompts/selections & cached page state, then reload (models, outputs and API keys are kept)"
-        className="h-8 px-3 rounded-lg border border-amber-500/25 bg-amber-500/8 hover:bg-amber-500/18 text-amber-300 text-xs font-semibold transition-all flex items-center gap-1.5"
+        className={`${PILL} border-amber-500/25 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18`}
       >
         <RotateCcw className="w-3.5 h-3.5" />
         Reset UI
@@ -541,7 +554,7 @@ export const TopSystemStrip = () => {
                 ? `Venice balance $${veniceUsd.toFixed(2)} - click to replace the key`
                 : 'Venice key saved - click to replace it'
         }
-        className={`h-8 px-3 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-40 ${
+        className={`${PILL} disabled:opacity-40 ${
           !veniceConfigured || veniceValid === false
             ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18'
             : veniceUsd !== null && veniceUsd < 1
@@ -563,7 +576,7 @@ export const TopSystemStrip = () => {
         onClick={handleCivitaiKey}
         disabled={civitaiSaving}
         title="Save Civitai API key for Civitai model downloads"
-        className={`h-8 px-3 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-40 ${
+        className={`${PILL} disabled:opacity-40 ${
           civitaiConfigured
             ? 'border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/18'
             : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18'
@@ -574,19 +587,10 @@ export const TopSystemStrip = () => {
       </button>
 
       <button
-        onClick={openFolders}
-        title="Choose where models, output and input files live"
-        className="h-8 px-3 rounded-lg border border-white/10 bg-white/5 text-xs font-medium text-slate-300 transition-all flex items-center gap-1.5 hover:bg-white/10 hover:text-white"
-      >
-        <FolderCog className="w-3.5 h-3.5" />
-        Folders
-      </button>
-
-      <button
         onClick={handleHfToken}
         disabled={hfSaving}
         title="Save Hugging Face token for gated model downloads"
-        className={`h-8 px-3 rounded-lg border text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-40 ${
+        className={`${PILL} disabled:opacity-40 ${
           hfConfigured
             ? 'border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/18'
             : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18'
@@ -597,7 +601,7 @@ export const TopSystemStrip = () => {
       </button>
 
       {/* ComfyUI status */}
-      <div className={`h-8 px-3 rounded-lg border text-xs font-medium flex items-center gap-1.5 ${
+      <div className={`${PILL} ${
         comfy.isConnected
           ? 'border-emerald-500/30 bg-emerald-500/8 text-emerald-300'
           : 'border-white/10 bg-white/5 text-slate-500'
@@ -610,7 +614,7 @@ export const TopSystemStrip = () => {
       </div>
 
       {/* Ollama status */}
-      <div className={`h-8 px-3 rounded-lg border text-xs font-medium flex items-center gap-1.5 ${
+      <div className={`${PILL} ${
         ollama.isConnected
           ? 'border-emerald-500/30 bg-emerald-500/8 text-emerald-300'
           : 'border-white/10 bg-white/5 text-slate-500'
@@ -621,6 +625,18 @@ export const TopSystemStrip = () => {
         }
         {ollamaLabel}
       </div>
+
+      {/* Last in the row, and away from the status pills: this one changes
+          where things are written, which is a different kind of act from the
+          rest of the bar. "Folders" named a noun and left the verb to guess. */}
+      <button
+        onClick={openFolders}
+        title="Choose where models, outputs and inputs are read from and written to"
+        className={`${PILL} border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white`}
+      >
+        <FolderCog className="w-3.5 h-3.5" />
+        Set Folder Paths
+      </button>
 
       {foldersOpen && createPortal(
         // Into body: the header sets backdrop-blur, which makes it the
