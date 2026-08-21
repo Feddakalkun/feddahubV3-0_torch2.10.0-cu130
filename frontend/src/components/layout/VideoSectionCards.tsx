@@ -10,7 +10,7 @@ export const VideoSectionCards = ({ onSelect, onBack, reopenFor }: VideoSectionC
   <SectionCards
     reopenFor={reopenFor}
     area="video"
-    kicker="Video Studio"
+    kicker="Video Workflows"
     title="Choose a video model"
     onSelect={onSelect}
     onBack={onBack}

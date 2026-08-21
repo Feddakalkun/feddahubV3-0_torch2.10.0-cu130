@@ -177,9 +177,9 @@ function FeddaApp() {
   const title = view === 'home'
     ? APP_VERSION_LABEL
     : view === 'image-section'
-      ? 'Image Studio'
+      ? 'Image Workflows'
       : view === 'video-section'
-        ? 'Video Studio'
+        ? 'Video Workflows'
         : meta.label;
 
   const renderWorkspace = () => {
@@ -264,13 +264,13 @@ function FeddaApp() {
               hasImageModules ? (
                 <ImageSectionCards onSelect={openTab} onBack={goHome} reopenFor={backFromTab} />
               ) : (
-                <ModuleUnavailablePage tab="image" moduleLabel="Image Studio" pack="core" />
+                <ModuleUnavailablePage tab="image" moduleLabel="Image Workflows" pack="core" />
               )
             ) : view === 'video-section' ? (
               hasVideoModules ? (
                 <VideoSectionCards onSelect={openTab} onBack={goHome} reopenFor={backFromTab} />
               ) : (
-                <ModuleUnavailablePage tab="video" moduleLabel="Video Studio" pack="booster" />
+                <ModuleUnavailablePage tab="video" moduleLabel="Video Workflows" pack="booster" />
               )
             ) : (
               renderWorkspace()
