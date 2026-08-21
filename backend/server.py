@@ -4153,21 +4153,62 @@ def _shrink_for_vision(img_bytes: bytes) -> bytes:
         return img_bytes
 
 
-def _evict_vision_model() -> None:
-    """Drop the vision model from VRAM before ComfyUI needs it.
+def _evict_ollama_models() -> None:
+    """Give the whole card back before ComfyUI needs it.
 
-    Ollama unloads a model when asked to keep it alive for zero seconds, which
-    is what an empty prompt with keep_alive 0 does. Best effort - a render must
-    not fail because this did.
+    This used to unload one model - whichever _get_ollama_vision_model named -
+    and leave everything else resident: the chat model behind the assistant, the
+    embedding model, or something the user loaded themselves outside the app.
+    Two 8 GB models is 17 GB of a 24 GB card, and half of it was being released.
+
+    Ollama is asked what it is actually holding rather than being told what we
+    think we loaded, which is the only version that covers models we did not
+    load. Unloading is a keep_alive of zero.
+
+    Best effort throughout: a render must not fail because this did.
     """
     try:
-        model = _get_ollama_vision_model()
-        if not model:
-            return
-        requests.post(f"{OLLAMA_URL}/api/generate",
-                      json={"model": model, "keep_alive": 0}, timeout=10)
+        ps = requests.get(f"{OLLAMA_URL}/api/ps", timeout=5).json()
     except Exception as e:
-        logger.debug("Vision model eviction skipped: %s", e)
+        logger.debug("Could not ask Ollama what is loaded (%s)", e)
+        return
+
+    held = [m.get("name") or m.get("model") for m in (ps.get("models") or [])]
+    held = [h for h in held if h]
+    if not held:
+        return
+
+    freeing = sum(m.get("size_vram") or 0 for m in ps.get("models") or [])
+    logger.info("Releasing %.1f GB of VRAM from Ollama before rendering: %s",
+                freeing / 1073741824, ", ".join(held))
+
+    for name in held:
+        try:
+            requests.post(f"{OLLAMA_URL}/api/generate",
+                          json={"model": name, "keep_alive": 0}, timeout=10)
+        except Exception as e:
+            logger.debug("Could not unload %s: %s", name, e)
+
+    # Unloading is not instant. Without this ComfyUI starts allocating while
+    # Ollama is still letting go, which is the same out-of-memory this exists
+    # to avoid - only harder to recognise. Bounded, because a stuck Ollama must
+    # not become a stuck render.
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        try:
+            still = requests.get(f"{OLLAMA_URL}/api/ps", timeout=5).json()
+        except Exception:
+            return
+        if not (still.get("models") or []):
+            logger.info("Ollama VRAM released.")
+            return
+        time.sleep(0.5)
+    logger.warning("Ollama still holding VRAM after 15s; rendering anyway.")
+
+
+# The old name, kept because it reads at the call site and one release is one
+# idea. It is no longer only the vision model.
+_evict_vision_model = _evict_ollama_models
 
 
 @app.post("/api/ollama/caption")
@@ -6847,9 +6888,9 @@ async def generate(req: GenerateRequest):
     """
     print(f"[GENERATE] Received workflow_id='{req.workflow_id}' | loras_count={len(req.params.get('loras') or [])}")
 
-    # Hand the card back before anything is queued: the captioner is allowed to
-    # stay warm while someone writes, not while ComfyUI loads twenty gigabytes.
-    _evict_vision_model()
+    # Hand the card back before anything is queued: a model is allowed to stay
+    # warm while someone writes, not while ComfyUI loads twenty gigabytes.
+    _evict_ollama_models()
 
     workflow_availability = module_service.is_workflow_available(req.workflow_id)
     if not workflow_availability.get("available"):
