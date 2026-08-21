@@ -51,6 +51,28 @@ export const ACTIVE_TAB_STORAGE_KEY = 'fedda_v21_active_tab';
 // the field and the file - but nothing ships one, and frontend/public/cards
 // does not exist here.
 
+/**
+ * The row across the top of the home screen.
+ *
+ * Ordered, and curated by hand - not by recency, not by usage count. That is
+ * the whole point of calling it a choice: it says what is worth your time
+ * according to someone, which is a different claim from what is popular.
+ *
+ * Any id in FEDDA_MODULES works, including the forty-odd workflows that
+ * otherwise sit two clicks deep inside Image Studio and Video Studio. Lifting
+ * one of those out is most of the value here.
+ *
+ * Edit this list to change the row. Ids that no longer exist are skipped rather
+ * than leaving a gap, and anything the current install cannot run is dropped
+ * the same way every other card is.
+ */
+export const EDITORS_CHOICE: string[] = [
+  'minimax-h3-director',
+  'minimax-h3-fflf',
+  'wan22-img2vid',
+  'qwen-image',
+];
+
 export const FEDDA_MODULES: FeddaModule[] = [
   {
     id: 'image-studio',
@@ -719,7 +741,12 @@ export const FEDDA_MODULES: FeddaModule[] = [
     sourceModuleId: 'minimax-h3',
     label: 'MiniMax Director',
     description: 'Cut a clip into shots before you render it. Each shot gets its own prompt, length and keyframe, and they come out as one take with sound.',
-    area: 'home',
+    // Filed with the other MiniMax modes rather than kept on the home grid.
+    // Its prominence comes from EDITORS_CHOICE below, which is the honest place
+    // for it: a favourite is a choice someone made, not a property of the
+    // workflow. It stays one click away in Video Studio when that choice
+    // changes.
+    area: 'video',
     pack: 'booster',
 
     tabs: ['minimax-h3-director'],

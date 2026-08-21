@@ -1,12 +1,38 @@
-import { ArrowRight, Construction, Sparkles } from 'lucide-react';
+import { ArrowRight, Construction, Sparkles, Star } from 'lucide-react';
 import { useModules } from '../../contexts/ModuleContext';
-import type { FeddaModule } from '../../modules/registry';
+import { EDITORS_CHOICE, type FeddaModule } from '../../modules/registry';
 import { HFTokenReminder } from '../ui/HFTokenReminder';
 
+/*
+ * The home screen fits one viewport, at any resolution.
+ *
+ * It could not before, and the reason was structural rather than a matter of
+ * tuning: every card declared an aspect ratio. `aspect-[3/2]` derives height
+ * from width, so two rows of cards plus a banner add up to whatever the window
+ * is wide - which on a 1920 screen is far more than 1080 tall. No amount of
+ * adjusting gaps fixes an arithmetic that does not involve the viewport.
+ *
+ * Those ratios were there to stop `object-cover` cropping the poster art. The
+ * art is gone - all fourteen home modules define no poster - so the ratios were
+ * defending nothing while breaking the layout. Height comes from flex weights
+ * now, and the rows share whatever the window has.
+ *
+ * `min-h-0` on every flexible child is what makes that work: a flex item's
+ * default `min-height: auto` refuses to shrink below its content, which silently
+ * reintroduces the overflow this is meant to remove.
+ *
+ * Type scales with `clamp()` against viewport height rather than sitting at a
+ * fixed pixel size, so a short window compresses the text along with the boxes
+ * instead of overflowing them.
+ */
+
+const ROW_LABEL =
+  'text-[clamp(8px,1.05vh,10px)] font-semibold uppercase tracking-[0.22em] text-white/35';
+
 /**
- * The chat agent gets its own full-width slab above the grid rather than a tile
- * inside it. It is the one entry point that isn't a workflow - it can reach any
- * of them - so making it look like a peer of "Gallery" would undersell it.
+ * The chat agent gets its own slab rather than a tile in the grid. It is the one
+ * entry point that is not a workflow - it can reach any of them - so making it
+ * look like a peer of "Gallery" would undersell it.
  */
 function ChatBanner({ module, onSelect }: { module: FeddaModule; onSelect: (id: string) => void }) {
   const Icon = module.Icon;
@@ -15,50 +41,157 @@ function ChatBanner({ module, onSelect }: { module: FeddaModule; onSelect: (id: 
       type="button"
       onClick={() => onSelect(module.defaultTab)}
       aria-label={module.label}
-      // Capped against viewport height as well as its ratio, so on a wide
-      // window the banner cannot grow until it squeezes the card rows.
-      //
-      // 20vh was too tight to honour the ratio: at 1002x777 the box came out
-      // 953x154, a ratio of 6.18 against the poster's 3.89, so cover scaled the
-      // image up to fill the width and threw away about a third of its height -
-      // the top of the bunny. 32vh lets the declared aspect actually apply at
-      // ordinary window sizes; the cap still catches very short windows.
-      className="group relative aspect-[1168/300] max-h-[32vh] w-full overflow-hidden rounded-2xl border border-cyan-400/25 bg-[#08090d] text-left transition-all hover:-translate-y-0.5 hover:border-cyan-300/50"
+      className="group relative min-h-0 w-full flex-[1.5] overflow-hidden rounded-2xl border
+                 border-cyan-400/25 bg-[#08090d] text-left transition-all
+                 hover:-translate-y-0.5 hover:border-cyan-300/50"
     >
-      {module.card?.poster && (
-        <img
-          src={module.card.poster}
-          alt=""
-          // Anchored right so the subject stays in frame while the copy sits
-          // over the darkened left side.
-          // The file is already cut to the banner's exact ratio, so plain cover
-          // needs no focal offset and nothing important gets cropped away.
-          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-        />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#050506] via-[#050506]/75 via-40% to-transparent" />
-      <div className="relative flex h-full max-w-[48%] flex-col justify-center gap-1.5 px-7">
+      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/[0.07] via-transparent to-transparent" />
+      <div className="relative flex h-full max-w-[52%] flex-col justify-center gap-[0.6vh] px-[2.2vw]">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10">
-            <Icon className="h-4 w-4 text-cyan-300" />
+          <div className="flex h-[clamp(20px,3vh,30px)] w-[clamp(20px,3vh,30px)] items-center
+                          justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10">
+            <Icon className="h-[clamp(10px,1.5vh,15px)] w-[clamp(10px,1.5vh,15px)] text-cyan-300" />
           </div>
-          {/* It works - chat, memory, history and Studio all run - so "coming
-              soon" both undersold it and contradicted the "try the preview"
-              link right below. Early, not absent. */}
-          <span className="rounded-md bg-cyan-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-cyan-200">
+          <span className="rounded-md bg-cyan-500/20 px-1.5 py-0.5 text-[clamp(7px,0.95vh,9px)]
+                           font-bold uppercase tracking-[0.14em] text-cyan-200">
             Preview
           </span>
         </div>
-        <p className="text-[22px] font-bold leading-tight tracking-tight text-zinc-50">
+        <p className="text-[clamp(14px,2.4vh,22px)] font-bold leading-tight tracking-tight text-zinc-50">
           {module.label}
         </p>
-        <p className="text-[12px] leading-relaxed text-white/55">{module.description}</p>
-        <span className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-300">
+        <p className="line-clamp-2 text-[clamp(9px,1.35vh,12px)] leading-snug text-white/55">
+          {module.description}
+        </p>
+        <span className="inline-flex items-center gap-1.5 text-[clamp(8px,1.2vh,11px)] font-semibold text-cyan-300">
           Open it
-          <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+          <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
         </span>
       </div>
+    </button>
+  );
+}
+
+/**
+ * A curated card. Brighter border and a star, so the row reads as a
+ * recommendation rather than just the first row of the grid.
+ */
+function ChoiceCard({ module, onSelect }: { module: FeddaModule; onSelect: (id: string) => void }) {
+  const Icon = module.Icon;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(module.defaultTab)}
+      aria-label={module.label}
+      className="group relative min-h-0 overflow-hidden rounded-xl border border-amber-400/25
+                 bg-[#0a0a0d] transition-all hover:-translate-y-0.5 hover:border-amber-300/55"
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-amber-400/[0.06] to-transparent
+                      transition-opacity duration-500 group-hover:opacity-0" />
+      <Star className="absolute right-2 top-2 h-3 w-3 fill-amber-300/70 text-amber-300/70" />
+      <div className="relative flex h-full flex-col items-center justify-center gap-[0.8vh] p-[1.4vh] text-center">
+        <div className="flex h-[clamp(24px,3.4vh,38px)] w-[clamp(24px,3.4vh,38px)] items-center
+                        justify-center rounded-xl border border-amber-400/25 bg-amber-400/[0.06]
+                        transition-all duration-300 group-hover:-translate-y-0.5 group-hover:border-amber-300/50">
+          <Icon className="h-[clamp(11px,1.7vh,18px)] w-[clamp(11px,1.7vh,18px)] text-amber-200/70
+                           transition-colors group-hover:text-amber-100" />
+        </div>
+        <p className="text-[clamp(9px,1.35vh,13px)] font-black uppercase leading-tight
+                      tracking-[0.16em] text-white/85 transition-colors group-hover:text-white">
+          {module.label}
+        </p>
+        <p className="line-clamp-2 max-w-[24ch] text-[clamp(8px,1.1vh,10px)] leading-snug
+                      text-white/30 transition-colors group-hover:text-white/50">
+          {module.description}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+/**
+ * An ordinary card. Everything is centred - icon, title, description - because
+ * a grid of cards with nothing but type in them reads as a grid only if the
+ * type agrees on where it sits.
+ */
+function HomeCard({ module, onSelect }: { module: FeddaModule; onSelect: (id: string) => void }) {
+  const Icon = module.Icon;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(module.defaultTab)}
+      aria-label={module.label}
+      className="group relative min-h-0 overflow-hidden rounded-lg border border-white/10
+                 bg-[#08090d] transition-all hover:-translate-y-0.5 hover:border-white/25"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.055] via-transparent
+                      to-transparent transition-opacity duration-500 group-hover:opacity-0" />
+      <div className="absolute inset-0 bg-gradient-to-tl from-white/[0.07] via-transparent
+                      to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="relative flex h-full flex-col items-center justify-center gap-[0.8vh] p-[1.3vh] text-center">
+        <div className="flex h-[clamp(22px,3.2vh,36px)] w-[clamp(22px,3.2vh,36px)] items-center
+                        justify-center rounded-xl border border-white/10 bg-white/[0.04]
+                        transition-all duration-300 group-hover:-translate-y-0.5
+                        group-hover:border-white/25 group-hover:bg-white/[0.08]">
+          <Icon className="h-[clamp(11px,1.6vh,17px)] w-[clamp(11px,1.6vh,17px)] text-white/45
+                           transition-colors group-hover:text-white/85" />
+        </div>
+        <p className="text-[clamp(9px,1.3vh,13px)] font-black uppercase leading-tight
+                      tracking-[0.18em] text-white/75 transition-colors group-hover:text-white">
+          {module.label}
+        </p>
+        <p className="line-clamp-2 max-w-[26ch] text-[clamp(7px,1.05vh,10px)] leading-snug
+                      text-white/25 transition-colors group-hover:text-white/45">
+          {module.description}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+/** Landscape card for the Automations row, or a "coming soon" placeholder. */
+function AutomationCard({ module, onSelect }: { module?: FeddaModule; onSelect: (id: string) => void }) {
+  if (!module) {
+    return (
+      <div className="relative min-h-0 overflow-hidden rounded-xl border border-dashed
+                      border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-[0.7vh] p-3 text-center">
+          <Sparkles className="h-[clamp(12px,1.8vh,18px)] w-[clamp(12px,1.8vh,18px)] text-white/25" />
+          <span className="text-[clamp(7px,1vh,10px)] font-semibold uppercase tracking-[0.2em] text-white/30">
+            Coming soon
+          </span>
+        </div>
+      </div>
+    );
+  }
+  const Icon = module.Icon;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(module.defaultTab)}
+      aria-label={module.label}
+      className="group relative min-h-0 overflow-hidden rounded-xl border border-violet-500/25
+                 bg-[#08090d] transition-all hover:-translate-y-0.5 hover:border-violet-400/50"
+    >
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-[0.7vh] p-3 text-center">
+        <Icon className="h-[clamp(12px,1.8vh,18px)] w-[clamp(12px,1.8vh,18px)] text-white/45" />
+        <p className="text-[clamp(8px,1.15vh,11px)] font-black uppercase leading-tight
+                      tracking-[0.16em] text-white/70 transition group-hover:text-white">
+          {module.label}
+        </p>
+      </div>
+      <span className="absolute left-2 top-2 rounded-md bg-violet-500/80 px-1.5 py-0.5
+                       text-[clamp(6px,0.85vh,9px)] font-bold uppercase tracking-wider text-white">
+        Automation
+      </span>
+      {module.wip ? (
+        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-amber-500/90
+                         px-1.5 py-0.5 text-[clamp(6px,0.85vh,9px)] font-bold uppercase
+                         tracking-wider text-black">
+          <Construction className="h-2.5 w-2.5" />
+          WIP
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -67,191 +200,86 @@ interface RichHomeProps {
   onSelect: (id: string) => void;
 }
 
-function HomeCard({ module, onSelect }: { module: FeddaModule; onSelect: (id: string) => void }) {
-  const Icon = module.Icon;
-  return (
-    <button
-      onClick={() => onSelect(module.defaultTab)}
-      aria-label={module.label}
-      // The card carries the poster's own 3:2 instead of taking whatever
-      // height the row has left over. Row-sizing was chosen to keep the home
-      // on one screen, but it produced a 354x315 box - ratio 1.12 - for a 1.50
-      // image at 771px and 150% zoom, so cover discarded a quarter of the
-      // width. A declared ratio cannot do that, and at two columns it is
-      // usually shorter than the height the row was handing out anyway.
-      className="group relative aspect-[3/2] w-full overflow-hidden rounded-lg border border-white/10 bg-[#08090d] transition-all hover:-translate-y-0.5 hover:border-white/25"
-    >
-      {module.card?.poster ? (
-        <>
-          <img
-            src={module.card.poster}
-            alt=""
-            // Height comes from the row, so the container's ratio moves with
-            // the window while the poster's stays at 3:2. Whenever they differ
-            // cover has to crop, and centred cropping takes the subject's head
-            // off before it takes the empty floor. Biased upward so the crop
-            // eats the bottom margin instead.
-            className="absolute inset-0 h-full w-full object-cover object-[50%_35%] transition duration-500 group-hover:scale-[1.03]"
-          />
-          {module.card?.video ? (
-            <video
-              className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:scale-[1.03] group-hover:opacity-100"
-              src={module.card.video}
-              poster={module.card.poster}
-              muted
-              loop
-              playsInline
-              autoPlay
-            />
-          ) : null}
-        </>
-      ) : (
-        /* The card itself: no art, so the type carries it. */
-        <>
-          {/* Depth, so a grid of these is not fifty identical rectangles. */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.055] via-transparent to-transparent transition-opacity duration-500 group-hover:opacity-0" />
-          <div className="absolute inset-0 bg-gradient-to-tl from-white/[0.07] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3.5 p-6">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] transition-all duration-300 group-hover:-translate-y-0.5 group-hover:border-white/25 group-hover:bg-white/[0.08]">
-              <Icon className="h-5 w-5 text-white/45 transition-colors group-hover:text-white/85" />
-            </div>
-            <div className="text-center">
-              <p className="text-[13px] font-black uppercase leading-tight tracking-[0.18em] text-white/75 transition-colors group-hover:text-white">
-                {module.label}
-              </p>
-              <p className="mx-auto mt-1.5 max-w-[210px] text-[10px] leading-relaxed text-white/25 transition-colors group-hover:text-white/45">
-                {module.description}
-              </p>
-            </div>
-          </div>
-        </>
-      )}
-    </button>
-  );
-}
-
-// Landscape (16:9) card for the top "Automations" row. Renders an active
-// module or a "coming soon" placeholder.
-//
-// Was portrait, four across. Two wide ones read better for what these are:
-// a pipeline is a sequence, and a row of tall narrow posters said nothing
-// about that while taking the full width to say it.
-function AutomationCard({ module, onSelect }: { module?: FeddaModule; onSelect: (id: string) => void }) {
-  if (!module) {
-    return (
-      <div className="relative aspect-[16/9] overflow-hidden rounded-xl border border-dashed border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent">
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
-            <Sparkles className="h-5 w-5 text-white/25" />
-          </div>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Coming soon</span>
-          <span className="text-[10px] text-white/15 leading-relaxed">More automated pipelines on the way</span>
-        </div>
-      </div>
-    );
-  }
-  const Icon = module.Icon;
-  return (
-    <button
-      onClick={() => onSelect(module.defaultTab)}
-      aria-label={module.label}
-      className="group relative aspect-[16/9] overflow-hidden rounded-xl border border-violet-500/25 bg-[#08090d] transition-all hover:-translate-y-0.5 hover:border-violet-400/50"
-    >
-      {module.card?.poster ? (
-        <img src={module.card.poster} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Icon className="h-6 w-6 text-white/40" />
-        </div>
-      )}
-      <span className="absolute left-2 top-2 rounded-md bg-violet-500/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">Automation</span>
-      {module.wip ? (
-        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-amber-500/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-black">
-          <Construction className="h-2.5 w-2.5" />
-          Under construction
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-/** Whole-row column counts, so the bottom row stays one row as cards come and
- *  go. Literal strings: Tailwind scans source text and would not emit a class
- *  built at runtime. Past six the row wraps, and `auto-rows-fr` makes the rows
- *  share the height instead of overlapping. */
-const BOTTOM_COLS: Record<number, string> = {
-  1: 'lg:grid-cols-1',
-  2: 'lg:grid-cols-2',
-  3: 'lg:grid-cols-3',
-  4: 'lg:grid-cols-4',
-  5: 'lg:grid-cols-5',
-  6: 'lg:grid-cols-6',
-};
-
 export const RichHome = ({ onSelect }: RichHomeProps) => {
   const { availableModules } = useModules();
-  // Not `module.card &&` - that asked whether a module had art, and the
-  // cards are text now, so it emptied the whole home screen.
-  const allCards = availableModules.filter((module) => (module.area === 'home' || module.area === 'system') && !module.hidden);
-  // The agent is pulled out of the grid and rendered as its own banner.
-  const chat = allCards.find((module) => module.id === 'chat-edit');
-  const cards = allCards.filter((module) => module.id !== 'chat-edit');
+
+  const byId = new Map(availableModules.map((m) => [m.id, m]));
+  // Order comes from the list, not from the registry, and an id that no longer
+  // resolves is dropped rather than rendered as a hole.
+  const choice = EDITORS_CHOICE.map((id) => byId.get(id)).filter(
+    (m): m is FeddaModule => Boolean(m) && !m!.hidden,
+  );
+  const chosen = new Set(choice.map((m) => m.id));
+
+  const allCards = availableModules.filter(
+    (m) => (m.area === 'home' || m.area === 'system') && !m.hidden && !chosen.has(m.id),
+  );
+  const chat = allCards.find((m) => m.id === 'chat-edit');
+  const cards = allCards.filter((m) => m.id !== 'chat-edit');
   const topCards = cards.slice(0, 2);
   const bottomCards = cards.slice(2);
-  const bottomCols = BOTTOM_COLS[Math.min(bottomCards.length, 6)] ?? 'lg:grid-cols-4';
-  const automations = availableModules.filter((module) => module.area === 'automation' && !module.hidden);
-  // Pad to 2 slots (undefined = "coming soon" placeholder)
+
+  const automations = availableModules.filter((m) => m.area === 'automation' && !m.hidden);
   const automationSlots: (FeddaModule | undefined)[] = [...automations, undefined, undefined].slice(0, 2);
 
-  // The home fits the viewport instead of scrolling: the two card rows share
-  // whatever height is left over, so zooming in or out reflows rather than
-  // pushing the bottom row out of sight.
-  //
-  // The rows carry a floor rather than shrinking freely. Without one they
-  // collapsed to ~40px slivers on a short window, and a card too thin to read
-  // is worse than a little scrolling - which is all that happens below roughly
-  // 560px of height.
+  // Column counts are set inline rather than through Tailwind classes: the
+  // count is only known at runtime, and Tailwind reads source text, so a class
+  // assembled from a variable is never emitted. A style attribute always is.
+  const cols = (n: number) => ({ gridTemplateColumns: `repeat(${Math.max(n, 1)}, minmax(0, 1fr))` });
+  const bottomCols = Math.min(Math.max(bottomCards.length, 1), 6);
+
   return (
-    // overflow-hidden clipped whatever did not fit. That was safe while the
-    // rows could shrink without limit, but now that they carry a shape-based
-    // floor it would cut the bottom row off entirely at high zoom. Scroll
-    // instead: the home still fits one screen at ordinary sizes.
-    <div className="flex h-full flex-col overflow-y-auto bg-[#050506]">
-      <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-3 px-6 pb-5 pt-3">
-        <div className="shrink-0">
+    <div className="flex h-full flex-col overflow-hidden bg-[#050506]">
+      <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-[1.1vh] px-5 py-[1.4vh]">
+        <div className="shrink-0 empty:hidden">
           <HFTokenReminder />
-          {chat && <ChatBanner module={chat} onSelect={onSelect} />}
         </div>
 
-        {automations.length > 0 && (
-          <section className="flex shrink-0 flex-col items-center space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/40">Automations</p>
-            <div className="grid w-full max-w-3xl gap-3 grid-cols-2">
-              {automationSlots.map((module, i) => (
-                <AutomationCard key={module?.id ?? `soon-${i}`} module={module} onSelect={onSelect} />
+        {choice.length > 0 && (
+          <section className="flex min-h-0 flex-[2.4] flex-col gap-[0.7vh]">
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Star className="h-3 w-3 fill-amber-300/70 text-amber-300/70" />
+              <p className={ROW_LABEL}>Editor&rsquo;s choice</p>
+            </div>
+            <div className="grid min-h-0 flex-1 gap-[0.9vw]" style={cols(choice.length)}>
+              {choice.map((m) => (
+                <ChoiceCard key={m.id} module={m} onSelect={onSelect} />
               ))}
             </div>
           </section>
         )}
 
-        {/* A floor tied to the poster's shape, not a flat pixel count. Forcing
-            the whole home into one viewport made the row hand these cards
-            whatever height was left: at 771 CSS px and 150% zoom that was a
-            1.12 container for a 1.50 image, so cover cropped a third of the
-            width away. The rows still flex and still prefer to fit, but they
-            will not squeeze a landscape card into a square - the page scrolls
-            a little instead, which is the cheaper loss. */}
-        <div className="grid w-full shrink-0 gap-3 md:grid-cols-2">
-          {topCards.map((module) => (
-            <HomeCard key={module.id} module={module} onSelect={onSelect} />
-          ))}
-        </div>
-        <div className={`grid min-h-[104px] w-full flex-[2] auto-rows-fr gap-3 sm:grid-cols-2 ${bottomCols}`}>
-          {bottomCards.map((module) => (
-            <HomeCard key={module.id} module={module} onSelect={onSelect} />
-          ))}
-        </div>
+        {chat && <ChatBanner module={chat} onSelect={onSelect} />}
+
+        {topCards.length > 0 && (
+          <div className="grid min-h-0 flex-[1.5] gap-[0.9vw]" style={cols(topCards.length)}>
+            {topCards.map((m) => (
+              <HomeCard key={m.id} module={m} onSelect={onSelect} />
+            ))}
+          </div>
+        )}
+
+        {automations.length > 0 && (
+          <section className="flex min-h-0 flex-[1.15] flex-col gap-[0.7vh]">
+            <p className={`shrink-0 ${ROW_LABEL}`}>Automations</p>
+            <div className="grid min-h-0 flex-1 gap-[0.9vw]" style={cols(2)}>
+              {automationSlots.map((m, i) => (
+                <AutomationCard key={m?.id ?? `soon-${i}`} module={m} onSelect={onSelect} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {bottomCards.length > 0 && (
+          <div
+            className="grid min-h-0 flex-[2] auto-rows-fr gap-[0.9vw]"
+            style={cols(bottomCols)}
+          >
+            {bottomCards.map((m) => (
+              <HomeCard key={m.id} module={m} onSelect={onSelect} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
