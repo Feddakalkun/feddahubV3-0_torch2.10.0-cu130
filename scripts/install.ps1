@@ -733,11 +733,25 @@ Write-Step "Node packs: installing all $($NodesConfig.Count)"
 $CustomNodesDir = Join-Path $ComfyDir "custom_nodes"
 if (-not (Test-Path $CustomNodesDir)) { New-Item -ItemType Directory -Path $CustomNodesDir | Out-Null }
 
-$Installed = 0; $Skipped = 0; $Failed = 0; $DepsFailed = @()
+$Installed = 0; $Skipped = 0; $Failed = 0; $DepsFailed = @(); $DepsWhy = @()
+$NodeIndex = 0
+$NodeTotal = $NodesConfig.Count
+$NodeClock = [System.Diagnostics.Stopwatch]::StartNew()
+
+# Sixty-two identical lines with no position in them is eight minutes of not
+# knowing how far along you are. Twenty characters of bar fixes that.
+function Show-NodeProgress {
+    param([int]$Done, [int]$Total, [string]$Name, [System.Diagnostics.Stopwatch]$Clock)
+    $filled = [int](20 * $Done / [Math]::Max($Total, 1))
+    $bar = ('#' * $filled) + ('-' * (20 - $filled))
+    $el = $Clock.Elapsed
+    Write-Step ("  [{0,2}/{1}] {2}  {3,5:mm\:ss}  {4}" -f $Done, $Total, $bar, $el, $Name) "White"
+}
 
 foreach ($Node in $NodesConfig) {
+    $NodeIndex++
     if ($Node.local -eq $true) {
-        Write-Step "  [$($Node.name)] Local - skipped" "Gray"
+        Write-Step "  [$NodeIndex/$NodeTotal] local - skipped: $($Node.name)" "Gray"
         continue
     }
 
@@ -750,12 +764,12 @@ foreach ($Node in $NodesConfig) {
         $VendorDir = Join-Path $RootPath "vendor\custom_nodes\$($Node.folder)"
         $ErrorActionPreference = "Continue"
         if (Test-Path $VendorDir) {
-            Write-Step "  [$($Node.name)] Installing from vendored copy..." "White"
+            Show-NodeProgress $NodeIndex $NodeTotal "$($Node.name) - from vendored copy" $NodeClock
             Copy-Item -Recurse -Force $VendorDir $NodeDir
             $out = "vendored"
             & cmd /c exit 0   # reset LASTEXITCODE so the success branch below runs
         } else {
-            Write-Step "  [$($Node.name)] Cloning..." "White"
+            Show-NodeProgress $NodeIndex $NodeTotal $Node.name $NodeClock
             $out = & git clone --depth 1 --recurse-submodules $Node.url "$NodeDir" 2>&1 | Out-String
         }
         $ErrorActionPreference = "Stop"
@@ -766,15 +780,19 @@ foreach ($Node in $NodesConfig) {
             $ReqFile = Join-Path $NodeDir "requirements.txt"
             if (Test-Path $ReqFile) {
                 $ErrorActionPreference = "Continue"
-                & $VenvPy -m pip install -r "$ReqFile" --no-warn-script-location --quiet 2>&1 | Out-Null
-                # pip's exit code used to go into Out-Null with its output. A
-                # failed dependency install then left a node that was counted as
-                # installed, cloned and present, and broken at import time - the
-                # user finding out only from a traceback in ComfyUI's log, with
-                # nothing connecting it back to this step.
+                # Captured rather than discarded. The exit code alone said a
+                # node had failed and never why, so finding out meant running
+                # pip again by hand - and the answers turn out to be faults in
+                # the packs themselves that no amount of retrying will fix.
+                $PipOut = & $VenvPy -m pip install -r "$ReqFile" --no-warn-script-location --quiet 2>&1
                 if ($LASTEXITCODE -ne 0) {
                     Write-Step "  [$($Node.name)] deps FAILED - node may not load" "Yellow"
+                    $Why = @($PipOut | Where-Object { "$_" -match '^\s*(ERROR|error:)' } |
+                             Select-Object -Last 2)
+                    if (-not $Why) { $Why = @($PipOut | Where-Object { "$_" -ne "" } | Select-Object -Last 2) }
+                    foreach ($w in $Why) { Write-Step "           $("$w".Trim())" "DarkYellow" }
                     $DepsFailed += $Node.name
+                    $DepsWhy += "$($Node.name): $((@($Why) -join ' / ').Trim())"
                 }
                 $ErrorActionPreference = "Stop"
             }
@@ -1124,6 +1142,7 @@ $InstallReport += ""
 $InstallReport += "Node packs:      $Installed installed, $Skipped already present, $Failed failed"
 if ($DepsFailed.Count) {
     $InstallReport += "  Deps failed:   $($DepsFailed -join ', ')"
+    foreach ($w in $DepsWhy) { $InstallReport += "    $w" }
     $InstallReport += "                 (those nodes may not load - run.bat repair retries them)"
 }
 
