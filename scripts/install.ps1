@@ -1051,6 +1051,52 @@ try {
     $InstallReport += "PyTorch:         $TorchInfo"
 } catch {}
 
+# The card, and whether torch was built for it.
+#
+# torch 2.10+cu130 carries sm_75 80 86 90 100 120 and no PTX. sm_89 - every
+# RTX 40 - is not in that list and runs on the sm_86 cubins, which CUDA allows
+# within a major version. It works, but it is worth reading off the machine
+# rather than reasoning about later, and no PTX means a card newer than this
+# list cannot JIT its way out.
+$GpuProbe = @'
+import torch
+if not torch.cuda.is_available():
+    print("GPU:             CUDA not available - check the NVIDIA driver")
+else:
+    maj, minr = torch.cuda.get_device_capability(0)
+    me = "sm_%d%d" % (maj, minr)
+    archs = torch.cuda.get_arch_list()
+    vram = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+    print("GPU:             %s  (%s, %.0f GB)" % (torch.cuda.get_device_name(0), me, vram))
+    print("Torch archs:     %s" % " ".join(archs))
+    if me in archs:
+        print("Arch match:      native")
+    else:
+        # Numeric, not string: "sm_90" sorts below "sm_89" lexically, which
+        # happens not to matter for today's values and would quietly give the
+        # wrong answer for tomorrow's.
+        num = lambda a: int(a.split("_")[1])
+        same = sorted([a for a in archs if a.startswith("sm_%d" % maj)
+                       and num(a) <= num(me)], key=num)
+        if same:
+            print("Arch match:      %s absent - runs on %s (minor compatibility)" % (me, same[-1]))
+        else:
+            print("Arch match:      *** %s NOT SUPPORTED by this torch build ***" % me)
+'@
+try {
+    $GpuProbe | Set-Content -LiteralPath "$env:TEMP\fedda_gpu.py" -Encoding ASCII
+    $GpuLines = & $VenvPy "$env:TEMP\fedda_gpu.py" 2>&1
+    foreach ($l in $GpuLines) { $InstallReport += "$l" }
+    Remove-Item "$env:TEMP\fedda_gpu.py" -Force -ErrorAction SilentlyContinue
+} catch { $InstallReport += "GPU:             probe failed" }
+
+# The driver, because "CUDA: False" on somebody else's PC is a driver version
+# more often than it is anything this installer did.
+try {
+    $Drv = (& nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>$null | Select-Object -First 1)
+    if ($Drv) { $InstallReport += "NVIDIA driver:   $($Drv.Trim())" }
+} catch {}
+
 $InstallReport += ""
 # One line, both halves. The quick-launch gate reads this and nothing else,
 # so a PASSED here has to mean the whole install and not just the Python.
@@ -1062,6 +1108,32 @@ if ($SmokeExitCode -eq 0 -and $FrontendOk) {
     if (-not $FrontendOk)     { $InstallReport += "  - frontend/node_modules missing (see logs/npm_install.log)" }
 }
 
+# Sixty-two packs install now, so a report that does not mention them is
+# describing the smaller half of what happened.
+$InstallReport += ""
+$InstallReport += "Node packs:      $Installed installed, $Skipped already present, $Failed failed"
+if ($DepsFailed.Count) {
+    $InstallReport += "  Deps failed:   $($DepsFailed -join ', ')"
+    $InstallReport += "                 (those nodes may not load - run.bat repair retries them)"
+}
+
+# Which version they are on. "It does not work" cannot be answered without it.
+try {
+    $Rev = (& git -C $RootPath rev-parse --short HEAD 2>$null)
+    if ($Rev) { $InstallReport += "FEDDA commit:    $($Rev.Trim())" }
+} catch {}
+
+# The cheap context that explains a good share of the rest.
+try {
+    $Os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+    $InstallReport += "Windows:         $($Os.Caption) build $($Os.BuildNumber)"
+    $InstallReport += "RAM:             {0:N0} GB" -f ($Os.TotalVisibleMemorySize / 1MB)
+} catch {}
+try {
+    $Drive = (Get-Item $RootPath).PSDrive
+    $InstallReport += "Free disk:       {0:N0} GB on {1}:" -f ($Drive.Free / 1GB), $Drive.Name
+} catch {}
+
 $InstallReport += ""
 $InstallReport += "Log Files:"
 $InstallReport += "  Report:  $(Join-Path $LogsDir 'install_report.txt')"
@@ -1071,7 +1143,8 @@ $InstallReport += "  Full:    $(Join-Path $LogsDir 'install_fast_log.txt')"
 $LogsDir = Join-Path $RootPath "logs"
 if (-not (Test-Path $LogsDir)) { New-Item -ItemType Directory -Path $LogsDir | Out-Null }
 $ReportFile = Join-Path $LogsDir "install_report.txt"
-$InstallReport | Set-Content -Path $ReportFile -Encoding UTF8
+[System.IO.File]::WriteAllLines(
+    $ReportFile, [string[]]$InstallReport, (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host ""
 foreach ($Line in $InstallReport) { Write-Host "  $Line" }
