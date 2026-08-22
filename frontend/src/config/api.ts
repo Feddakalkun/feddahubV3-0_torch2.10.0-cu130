@@ -25,6 +25,23 @@ export const COMFY_API = {
 };
 
 // Backend API Configuration (FastAPI server)
+/**
+ * Fired when a saved credential changes, so every badge showing that state can
+ * refresh without a page reload.
+ *
+ * The Hugging Face token can be saved from the home-screen reminder or the top
+ * bar, and each held its own copy of "is it configured" - so saving in one left
+ * the other amber until the page reloaded and both remounted.
+ *
+ * An event rather than a context: whatever gets added later - a settings page, a
+ * download dialog - can announce or listen without being wired into a provider.
+ */
+export const CREDENTIALS_CHANGED = 'fedda:credentials-changed';
+
+export const announceCredentialChange = () => {
+  window.dispatchEvent(new Event(CREDENTIALS_CHANGED));
+};
+
 export const BACKEND_API = {
     BASE_URL: BACKEND_BASE,
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { KeyRound, X } from 'lucide-react';
-import { BACKEND_API } from '../../config/api';
+import { BACKEND_API, CREDENTIALS_CHANGED, announceCredentialChange } from '../../config/api';
 
 const DISMISS_KEY = 'fedda_hf_reminder_dismissed';
 
@@ -16,10 +16,21 @@ export const HFTokenReminder = () => {
 
   useEffect(() => {
     if (localStorage.getItem(DISMISS_KEY)) return;
-    fetch(`${BACKEND_API.BASE_URL}${BACKEND_API.ENDPOINTS.SETTINGS_HF_TOKEN_STATUS}`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => setShow(!d?.configured))
-      .catch(() => {});
+    const check = () => {
+      fetch(`${BACKEND_API.BASE_URL}${BACKEND_API.ENDPOINTS.SETTINGS_HF_TOKEN_STATUS}`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((d) => setShow(!d?.configured))
+        .catch(() => {});
+    };
+    check();
+    // Also on focus: the token can change outside the app entirely, and coming
+    // back to the window is the moment to notice.
+    window.addEventListener(CREDENTIALS_CHANGED, check);
+    window.addEventListener('focus', check);
+    return () => {
+      window.removeEventListener(CREDENTIALS_CHANGED, check);
+      window.removeEventListener('focus', check);
+    };
   }, []);
 
   if (!show) return null;
@@ -40,6 +51,7 @@ export const HFTokenReminder = () => {
       });
       if (!r.ok) throw new Error('save failed');
       setShow(false);
+      announceCredentialChange();
     } catch {
       window.alert('Could not save the Hugging Face token.');
     } finally {

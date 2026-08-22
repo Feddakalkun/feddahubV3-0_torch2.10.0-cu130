@@ -4,7 +4,7 @@ import { Timer, Activity, BrainCircuit, Loader2, Trash2, Zap, DownloadCloud, Pla
 import { useComfyStatus } from '../../hooks/useComfyStatus';
 import { useOllamaStatus } from '../../hooks/useOllamaStatus';
 import { useComfyExecution } from '../../contexts/ComfyExecutionContext';
-import { BACKEND_API } from '../../config/api';
+import { BACKEND_API, CREDENTIALS_CHANGED, announceCredentialChange } from '../../config/api';
 import { useModelDownload } from '../../contexts/ModelDownloadContext';
 
 /** m:ss under an hour, h:mm:ss above it - a bare seconds count stops being
@@ -170,7 +170,18 @@ export const TopSystemStrip = () => {
     };
 
     loadTokenStatus();
-    return () => { mounted = false; };
+
+    // The token can be saved from the home-screen reminder as well as from
+    // these badges, and each used to hold its own idea of whether one existed -
+    // so saving in one left the other amber until a page reload remounted both.
+    // Focus covers the case no event can: changed outside the app entirely.
+    window.addEventListener(CREDENTIALS_CHANGED, loadTokenStatus);
+    window.addEventListener('focus', loadTokenStatus);
+    return () => {
+      mounted = false;
+      window.removeEventListener(CREDENTIALS_CHANGED, loadTokenStatus);
+      window.removeEventListener('focus', loadTokenStatus);
+    };
   }, []);
 
   const gpu = useMemo(() => {
@@ -281,6 +292,7 @@ export const TopSystemStrip = () => {
       if (!r.ok) throw new Error('Failed to save token');
       const data = await r.json();
       setHfConfigured(!!data.configured);
+      announceCredentialChange();
     } catch {
       window.alert('Could not save Hugging Face token.');
     } finally {
