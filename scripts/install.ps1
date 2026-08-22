@@ -829,7 +829,19 @@ foreach ($Node in $NodesConfig) {
                     if (-not $Why) { $Why = @($PipOut | Where-Object { "$_" -ne "" } | Select-Object -Last 2) }
                     foreach ($w in $Why) { Write-Step "           $("$w".Trim())" "DarkYellow" }
                     $DepsFailed += $Node.name
-                    $DepsWhy += "$($Node.name): $((@($Why) -join ' / ').Trim())"
+                    # One readable line. pip's resolver errors run past 280
+                    # characters, most of it a git URL in brackets, and a report
+                    # line that wraps four times is worse than one that stops.
+                    #
+                    # The bracketed part goes first, then the cap - truncating
+                    # before stripping kept the URL and cut off "because these
+                    # package versions have conflicting dependencies", which is
+                    # the only part that says anything. Full text stays in
+                    # install_fast_log.txt.
+                    $First = "$(@($Why)[0])".Trim()
+                    $First = ($First -replace '\([^)]*\)', '') -replace '\s{2,}', ' '
+                    if ($First.Length -gt 130) { $First = $First.Substring(0, 127) + "..." }
+                    $DepsWhy += "$($Node.name): $($First.Trim())"
                 }
                 $ErrorActionPreference = "Stop"
             }
