@@ -42,6 +42,10 @@ export const TopSystemStrip = () => {
   const [comfyStats, setComfyStats] = useState<any>(null);
   const [gpuStats, setGpuStats] = useState<any>(null);
   const [purging, setPurging] = useState(false);
+  // What the last purge actually did. Shown under the bar rather than in an
+  // alert: the number it reports is worth reading next to the VRAM figure it
+  // refers to.
+  const [purgeNote, setPurgeNote] = useState<string | null>(null);
   // Folders the user may point elsewhere. Empty means the default, which the
   // backend supplies so the placeholder can show what "empty" actually means.
   const [foldersOpen, setFoldersOpen] = useState(false);
@@ -213,15 +217,54 @@ export const TopSystemStrip = () => {
     };
   }, [comfyStats, gpuStats]);
 
+  /**
+   * Free VRAM, and say what actually happened.
+   *
+   * The button used to fire /comfy/free and stop there, which looked like
+   * success every time. It is not: ComfyUI answers 200 and logs "0 models
+   * unloaded" when the weights were brought in by its dynamic loader, because
+   * those are staged outside PyTorch's allocator and unload_all_models only
+   * reaches what torch owns. Measured on a 3090 holding a 26 GB checkpoint:
+   * 22875 MiB before, 22940 MiB after.
+   *
+   * So it reads the figure on both sides and reports the difference. When
+   * nothing moved it says so, and says the one thing that does work - a
+   * ComfyUI restart - rather than leaving somebody pressing a button that
+   * cannot do what its name promises.
+   */
+  const vramUsedGb = async (): Promise<number | null> => {
+    try {
+      const s = await (await fetch('/comfy/system_stats')).json();
+      const d = (s.devices || [])[0];
+      if (!d) return null;
+      return (d.vram_total - d.vram_free) / 1024 ** 3;
+    } catch { return null; }
+  };
+
   const handlePurge = async () => {
     if (purging) return;
     if (!confirm('Purge VRAM? This stops active generation and unloads all models.')) return;
     setPurging(true);
     try {
+      const before = await vramUsedGb();
       await fetch('/comfy/free', { method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ unload_models: true, free_memory: true }),
       });
+      // ComfyUI returns before the release has settled.
+      await new Promise((r) => setTimeout(r, 1500));
+      const after = await vramUsedGb();
+
+      if (before === null || after === null) return;
+      const freed = before - after;
+      if (freed >= 0.2) {
+        setPurgeNote(`Freed ${freed.toFixed(1)} GB — ${after.toFixed(1)} GB still in use.`);
+      } else {
+        setPurgeNote(
+          `Nothing was freed. ${after.toFixed(1)} GB is held by models ComfyUI streamed `
+          + `rather than loaded, which its unload cannot reach. Restarting FEDDA releases it.`,
+        );
+      }
     } finally {
       setPurging(false);
     }
@@ -649,6 +692,23 @@ export const TopSystemStrip = () => {
         <FolderCog className="w-3.5 h-3.5" />
         Set Folder Paths
       </button>
+
+      {/* What the last purge did, next to the VRAM figure it refers to. It
+          reads as an answer to the button rather than an alert to dismiss, and
+          it stays until the next one so the number can be compared. */}
+      {purgeNote && (
+        <div className="flex min-w-0 items-center gap-2 pl-1 text-[11px] text-amber-200/80">
+          <span className="truncate" title={purgeNote}>{purgeNote}</span>
+          <button
+            type="button"
+            onClick={() => setPurgeNote(null)}
+            className="shrink-0 text-white/30 transition hover:text-white/70"
+            aria-label="Dismiss"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {foldersOpen && createPortal(
         // Into body: the header sets backdrop-blur, which makes it the
