@@ -308,19 +308,24 @@ echo.
 echo   This takes a while - usually 30 to 60 minutes.
 echo.
 echo   That is on purpose. Every custom node pack goes in now, so that
-echo   a workflow you open next week just works instead of telling you
-echo   a node is missing and leaving you to find out which ComfyUI
-echo   extension it wanted. While FEDDA is still being built, I would
-echo   rather spend your time here than have you troubleshooting
-echo   ComfyUI yourself.
+echo   the workflows you run just work instead of telling you a node is
+echo   missing and leaving you to find out which ComfyUI extension it
+echo   wanted. While FEDDA is still being built, I would rather spend
+echo   your time here than have you troubleshooting ComfyUI yourself.
 echo.
 echo   If something does go wrong, tell me. I would much rather hear
 echo   about it and fix it than have you fighting it alone - that is
 echo   how this gets better.
 echo.
+rem  The connection line used to say FEDDA "needs a stable internet connection
+rem  all the way through", under a heading that reads as being about the app. It
+rem  is not: the install downloads, and so does fetching a model, but once a
+rem  model is on disk that workflow runs with the network off. Saying otherwise
+rem  gave away one of the better things about running locally.
 echo   Also worth knowing:
-echo     - It needs a stable internet connection all the way through
-echo     - Models are downloaded later, and they are large
+echo     - The install needs a steady connection while it runs
+echo     - Models download separately later, and they are large
+echo     - After that FEDDA runs offline - nothing leaves your machine
 echo     - A recent NVIDIA GPU is strongly recommended
 echo.
 echo   No further input is required once it starts.
