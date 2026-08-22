@@ -66,6 +66,29 @@ export const ACTIVE_TAB_STORAGE_KEY = 'fedda_v21_active_tab';
  * than leaving a gap, and anything the current install cannot run is dropped
  * the same way every other card is.
  */
+/**
+ * Workflows the agent is allowed to drive.
+ *
+ * Forty-three are offered and this many have actually been taken through the
+ * agent end to end. The rest are not broken, they are untried - and a workflow
+ * that runs but behaves oddly is worse for somebody new than one that says "not
+ * yet", because they cannot tell it from something they did wrong.
+ *
+ * Order matters. The first entry is where a new conversation starts, and the
+ * bar lists them in this order ahead of everything else.
+ *
+ * Adding one is a line. Test it, then release it.
+ *
+ * Not the same question as the readiness check in WorkflowSwitcher: that asks
+ * whether this machine has the models and nodes, which is about the install.
+ * This asks whether anyone has driven the agent through it, which is about the
+ * software. A workflow can pass the first and fail the second.
+ */
+export const AGENT_ENABLED: string[] = [
+  'qwen-rapid-edit-v23',
+  'z-image',
+];
+
 export const EDITORS_CHOICE: string[] = [
   'minimax-h3-director',
   'minimax-h3-fflf',

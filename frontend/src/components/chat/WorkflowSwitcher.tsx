@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BACKEND_API } from '../../config/api';
 import { ChevronDown, ChevronUp, Layers, Lock, Search } from 'lucide-react';
 import { useAgentWorkflow } from '../../contexts/AgentWorkflowContext';
-import { FEDDA_MODULES } from '../../modules/registry';
+import { AGENT_ENABLED, FEDDA_MODULES } from '../../modules/registry';
 import { groupIntoFamilies } from '../../modules/workflowFamilies';
 import { cn } from '../../lib/styles';
 
@@ -22,11 +22,18 @@ import { cn } from '../../lib/styles';
  * of the bar is seeing what the app can do, and hiding the rest makes the
  * library look smaller than it is.
  *
- * What decides whether a card can be picked is whether its models are on disk.
- * The pack being installed is not the same question and answering it that way
- * was wrong: 33 of 34 looked ready when only 16 would actually run. Until the
- * readiness answer arrives nothing is dimmed, because guessing wrong in that
- * direction locks the user out of workflows that work.
+ * Two things decide whether a card can be picked, and they fail differently.
+ *
+ * AGENT_ENABLED is about the software: has anyone actually driven the agent
+ * through this workflow. Most have not. A workflow that runs but behaves oddly
+ * is worse for somebody new than one that says "not yet", because they cannot
+ * tell it apart from something they did wrong.
+ *
+ * Readiness is about this machine: are the models and nodes here. The pack
+ * being installed is not the same question and answering it that way was wrong -
+ * 33 of 34 looked ready when only 16 would run. Until that answer arrives
+ * nothing is dimmed for it, because guessing wrong there locks somebody out of
+ * workflows that work.
  *
  * Cards are filmstrip size, too small to read, which is what the hover preview
  * is for. That preview is positioned against the viewport, because a scrolling
@@ -42,7 +49,12 @@ const OPEN_KEY = 'fedda.chat.switcher.open';
  * offers, while a missing node needs the pack installed, so it is the bigger
  * blocker of the two.
  */
-const whyNot = (e: { known: boolean; missing: number; missingNodes: string[] }) => {
+const whyNot = (e: { known: boolean; enabled: boolean; missing: number; missingNodes: string[] }) => {
+  // Checked before anything about files. A workflow nobody has driven through
+  // the agent is not offered whether or not this machine could run it, and
+  // saying "3 model files missing" about one would send somebody downloading
+  // for a card that still would not open.
+  if (!e.enabled) return 'not enabled for the agent yet';
   // A registry entry can name a workflow that was never shipped - FLUX KLEIN
   // UNCENSORED points at one that exists in no config and no file. Nothing is
   // missing there because there is nothing; saying "0 model files missing"
@@ -56,10 +68,20 @@ const whyNot = (e: { known: boolean; missing: number; missingNodes: string[] }) 
   return `${e.missing} model file${e.missing === 1 ? '' : 's'} missing`;
 };
 
+/**
+ * Two separate gates, and a card needs both. Enabled is about the software -
+ * has anyone driven the agent through this workflow. Ready is about this
+ * machine - are its models and nodes here. Keeping them apart is what lets the
+ * tooltip say which one is stopping you.
+ */
+const pickable = (e: Entry) => e.enabled && e.ready;
+
 type Entry = {
   id: string;
   label: string;
   family: string;
+  /** On the AGENT_ENABLED list - tried through the agent and released. */
+  enabled: boolean;
   /** The backend has a workflow by this id at all. */
   known: boolean;
   /** Everything it needs - models and nodes - is present. */
@@ -120,6 +142,7 @@ export const WorkflowSwitcher = () => {
           id,
           label: m.label,
           family: f.label,
+          enabled: AGENT_ENABLED.includes(id),
           known: readiness ? id in readiness : true,
           ready: readiness ? Boolean(readiness[id]?.ready) : true,
           missing: readiness?.[id]?.missing ?? 0,
@@ -129,16 +152,23 @@ export const WorkflowSwitcher = () => {
   }, [families, readiness]);
 
   const current = entries.find((e) => e.id === workflowId);
-  const readyCount = entries.filter((e) => e.ready).length;
+  // Enabled, not ready: with two workflows released and forty-three listed,
+  // "35/43" answered a question nobody is asking yet.
+  const enabledCount = entries.filter(pickable).length;
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     const hits = q
       ? entries.filter((e) => `${e.label} ${e.family}`.toLowerCase().includes(q))
       : entries;
-    // Runnable first: the ones you can actually use should not be buried
-    // among the ones you cannot.
-    return [...hits].sort((a, b) => Number(b.ready) - Number(a.ready));
+    // Enabled first and in the order the list names them - it is curated, and
+    // its first entry is where a new conversation starts. Runnable next, then
+    // the rest: what you can use should not be buried among what you cannot.
+    const rank = (e: Entry) => {
+      const i = AGENT_ENABLED.indexOf(e.id);
+      return i >= 0 ? i : 1000 - Number(e.ready);
+    };
+    return [...hits].sort((a, b) => rank(a) - rank(b));
   }, [entries, query]);
 
   const toggle = () => {
@@ -163,7 +193,7 @@ export const WorkflowSwitcher = () => {
           <span className="font-mono normal-case tracking-normal text-white/50">
             {current?.label || workflowId}
           </span>
-          <span className="font-mono text-white/25">{readyCount}/{entries.length}</span>
+          <span className="font-mono text-white/25">{enabledCount}/{entries.length}</span>
           {open ? <ChevronUp className="h-3.5 w-3.5 text-white/25" />
                 : <ChevronDown className="h-3.5 w-3.5 text-white/25" />}
         </button>
@@ -190,13 +220,13 @@ export const WorkflowSwitcher = () => {
             <button
               key={e.id}
               type="button"
-              disabled={!e.ready}
+              disabled={!pickable(e)}
               onClick={() => pick(e.id)}
-              title={e.ready ? `${e.label} — ${e.family}` : `${e.label} — ${whyNot(e)}`}
+              title={pickable(e) ? `${e.label} — ${e.family}` : `${e.label} — ${whyNot(e)}`}
               className={cn(
                 'relative flex h-16 w-[104px] shrink-0 flex-col justify-center gap-0.5',
                 'overflow-hidden rounded-md bg-[#141420] px-2 py-1.5 text-left ring-1 transition',
-                !e.ready ? 'cursor-not-allowed opacity-40 ring-white/5'
+                !pickable(e) ? 'cursor-not-allowed opacity-40 ring-white/5'
                   : e.id === workflowId ? 'ring-cyan-400/80 bg-cyan-500/10'
                   : 'ring-white/10 hover:bg-white/[0.06] hover:ring-white/40',
               )}
@@ -210,7 +240,7 @@ export const WorkflowSwitcher = () => {
                 {e.label}
               </span>
               <span className="flex items-center gap-1 truncate text-[8px] uppercase tracking-wider text-white/30">
-                {!e.ready && <Lock className="h-2 w-2 shrink-0" />}
+                {!pickable(e) && <Lock className="h-2 w-2 shrink-0" />}
                 {e.family}
               </span>
             </button>
