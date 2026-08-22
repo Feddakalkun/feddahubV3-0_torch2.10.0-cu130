@@ -616,19 +616,21 @@ echo [3/3] Creating run.bat in the install root... >> "%INSTALL_LOG%"
 ) > "%INSTALL_ROOT%\run.bat"
 
 
-:: Thin download_models.bat - per-workflow model downloads (resumable)
-(
-    echo @echo off
-    echo cd /d "%%~dp0app"
-    echo call scripts\download_models.bat %%*
-) > "%INSTALL_ROOT%\download_models.bat"
-
-:: Thin symlink_modelfolder.bat - link an external model folder into models\<subfolder>
-(
-    echo @echo off
-    echo cd /d "%%~dp0app"
-    echo call scripts\symlink_modelfolder.bat %%*
-) > "%INSTALL_ROOT%\symlink_modelfolder.bat"
+rem  No download_models.bat or symlink_modelfolder.bat in the root any more.
+rem  Both jobs are done better inside the app:
+rem
+rem    models   - Settings downloads a workflow's models with live progress.
+rem               The batch file adds installing that workflow's node packs,
+rem               which mattered when only the core twelve shipped; all
+rem               sixty-two go in at install time now, and `run.bat repair`
+rem               covers a pack that needs redoing.
+rem    folders  - Set Folder Paths writes extra_model_paths.yaml, which adds a
+rem               search path. A symlink replaces the folder and wants elevated
+rem               rights on Windows to do it. Same outcome, less to go wrong.
+rem
+rem  The scripts themselves stay in app\scripts\ and still run. What goes is
+rem  their place in the front door: four files in the root, two of which most
+rem  people should never touch, reads as four things to understand.
 
 echo.
 echo   Finishing up...
@@ -672,11 +674,10 @@ echo.
 echo   Every node pack is installed, so the workflows are ready as they
 echo   are. Models download the first time a workflow needs one.
 echo.
-echo   Also in this folder
+echo   Settings inside FEDDA can fetch a workflow's models up front, or
+echo   point at a model folder you already have on another drive.
 echo.
-echo     run.bat repair           reinstall packs, if something breaks
-echo     download_models.bat      fetch a workflow's models up front
-echo     symlink_modelfolder.bat  use models from another drive
+echo   If something breaks:   run.bat repair
 echo.
 echo   ------------------------------------------------------------
 echo.
