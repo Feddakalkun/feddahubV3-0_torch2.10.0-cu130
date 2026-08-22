@@ -1534,12 +1534,69 @@ class AgentDenyRequest(BaseModel):
     action_ids: Optional[List[int]] = None
 
 
+# A model hint carrying this prefix is answered by Venice rather than Ollama.
+# The prefix is how the choice travels: every agent path already passes a hint
+# through to _ollama_chat_text, so nothing between the UI and here has to learn
+# about a second provider.
+VENICE_MODEL_PREFIX = "venice:"
+
+
+def _venice_chat_text(
+    model: str,
+    prompt: str,
+    history: List[Dict[str, Any]],
+    system_instruction: Optional[str] = None,
+) -> Optional[str]:
+    """One reply from Venice, or None to fall back to the local model.
+
+    None rather than an exception on purpose. Venice can be down, out of credit
+    or missing its key, and an agent that stops talking because a paid API said
+    no is worse than one that quietly carries on locally.
+    """
+    key = (load_settings().get("venice_api_key") or "").strip()
+    if not key:
+        return None
+
+    messages: List[Dict[str, str]] = []
+    if system_instruction:
+        messages.append({"role": "system", "content": system_instruction})
+    for msg in history[-12:]:
+        content = str(msg.get("content", "")).strip()
+        if not content:
+            continue
+        role = "assistant" if str(msg.get("role", "")).lower() == "assistant" else "user"
+        messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": prompt})
+
+    try:
+        data = venice_service.chat(key, {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.85,
+            "top_p": 0.92,
+        })
+        text = (((data.get("choices") or [{}])[0].get("message") or {}).get("content") or "").strip()
+        return text or None
+    except Exception as exc:                       # noqa: BLE001 - fall back, never fail
+        logger.warning("Venice chat failed (%s); using the local model", exc)
+        return None
+
+
 def _ollama_chat_text(
     prompt: str,
     history: List[Dict[str, Any]],
     system_instruction: Optional[str] = None,
     model_hint: Optional[str] = None,
 ) -> str:
+    # Venice first when asked for, local otherwise - and local again if Venice
+    # could not answer.
+    if model_hint and model_hint.startswith(VENICE_MODEL_PREFIX):
+        reply = _venice_chat_text(
+            model_hint[len(VENICE_MODEL_PREFIX):], prompt, history, system_instruction)
+        if reply:
+            return reply
+        model_hint = None
+
     model = _resolve_ollama_text_model_hint(model_hint) or ""
     if not model:
         raise HTTPException(status_code=503, detail="No local Ollama text model available.")

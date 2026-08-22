@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import {
-  ChevronDown, ChevronRight, ImagePlus, Loader2, Play, RotateCcw, Send, Undo2, Upload,
+  ChevronDown, ChevronRight, ImagePlus, Loader2, Play, Send, Undo2, Upload,
 } from 'lucide-react';
 import { BACKEND_API } from '../config/api';
 import { ChatImage } from '../components/chat/ChatImage';
@@ -186,13 +186,38 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
     (async () => {
       let saved = '';
       try { saved = localStorage.getItem(MODEL_KEY) || ''; } catch { /* private mode */ }
+      // Local models first, then Venice if a key is configured. Venice entries
+      // carry a `venice:` prefix, which is the whole routing decision - the
+      // backend reads it and answers from there instead of Ollama, and falls
+      // back locally if it cannot. Nothing between here and there has to know
+      // there are two providers.
+      let available: string[] = [];
       try {
         const res = await fetch(`${BACKEND_API.BASE_URL}/api/ollama/models`);
         const data = await res.json();
-        const available: string[] = Array.isArray(data.models) ? data.models : [];
-        setModels(available);
+        available = Array.isArray(data.models) ? data.models : [];
         setModel(saved && available.includes(saved) ? saved : (data.text_model || ''));
-      } catch { setModels([]); }
+      } catch { /* Venice may still be usable on its own */ }
+
+      try {
+        const st = await (await fetch(
+          `${BACKEND_API.BASE_URL}${BACKEND_API.ENDPOINTS.SETTINGS_VENICE_KEY_STATUS}`,
+          { cache: 'no-store' })).json();
+        if (st?.configured) {
+          // ?type=text: the same endpoint also serves image, tts and embedding
+          // models, and a chat picker offering an image model is an error the
+          // user only discovers by getting no reply.
+          const vm = await (await fetch(
+            `${BACKEND_API.BASE_URL}/api/venice/models?type=text`)).json();
+          const ids: string[] = (vm?.data || vm?.models || [])
+            .map((m: { id?: string } | string) => (typeof m === 'string' ? m : m?.id))
+            .filter(Boolean);
+          available = [...available, ...ids.map((id) => `venice:${id}`)];
+        }
+      } catch { /* no Venice, no extra entries */ }
+
+      setModels(available);
+      if (saved && available.includes(saved)) setModel(saved);
     })();
   }, []);
 
@@ -239,6 +264,21 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
     })();
     return () => { cancelled = true; };
   }, [openId, loopField]);
+
+  /**
+   * The conversation as it stands right now.
+   *
+   * `run()` closes over `messages` from the render that created it, and it is
+   * called from `send()` one line after setMessages - so on the first turn the
+   * closure still held the empty array, persist saw no user message, took its
+   * "do not write an empty session" early return, and nothing was ever saved.
+   *
+   * A ref instead of threading the array through run's signature: run is also
+   * called from a button with no conversation in scope, and a parameter added
+   * to fix staleness is a parameter the next caller forgets.
+   */
+  const messagesRef = useRef<Msg[]>(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const persist = async (nextMessages: Msg[], nextValues: Record<string, string | number>) => {
     if (!nextMessages.some((m) => m.role === 'user')) return;
@@ -477,7 +517,13 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
           if (idx >= 0) next[idx] = { role: 'agent', text, image: shown, chained };
           return next;
         });
-        void persist([...messages, { role: 'agent', text, image: shown }], nextValues);
+        // messagesRef, not messages: see the comment on the ref. The pending
+        // placeholder is dropped - it is a spinner, not a turn worth keeping.
+        void persist(
+          [...messagesRef.current.filter((m) => !m.pending),
+           { role: 'agent', text, image: shown }],
+          nextValues,
+        );
         return;
       }
       throw new Error('Timed out waiting for output');
@@ -671,7 +717,11 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
             className="max-w-[180px] rounded-lg bg-white/[0.05] px-2 py-1.5 text-[10px] text-white/55 outline-none focus:bg-white/[0.08]"
           >
             <option value="">Default model</option>
-            {models.map((m) => <option key={m} value={m}>{m}</option>)}
+            {models.map((m) => (
+              <option key={m} value={m}>
+                {m.startsWith('venice:') ? `Venice · ${m.slice(7)}` : m}
+              </option>
+            ))}
           </select>
         )}
         <div className="ml-auto flex items-center gap-1">
@@ -683,13 +733,9 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
           >
             <Undo2 className="h-3 w-3" /> Undo
           </button>
-          <button
-            type="button"
-            onClick={() => { setMessages([]); setHistory([]); setSessionId(null); setError(null); }}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-white/45 transition hover:bg-white/[0.06] hover:text-white"
-          >
-            <RotateCcw className="h-3 w-3" /> New
-          </button>
+          {/* No "New" here. The sidebar owns starting a chat and shows the list
+              a new one joins; a second button doing the same thing from a place
+              with no list next to it is one more thing to interpret. */}
         </div>
       </div>
 
