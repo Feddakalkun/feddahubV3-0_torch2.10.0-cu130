@@ -737,15 +737,48 @@ $Installed = 0; $Skipped = 0; $Failed = 0; $DepsFailed = @(); $DepsWhy = @()
 $NodeIndex = 0
 $NodeTotal = $NodesConfig.Count
 $NodeClock = [System.Diagnostics.Stopwatch]::StartNew()
+$NodeBytes = 0.0
 
 # Sixty-two identical lines with no position in them is eight minutes of not
-# knowing how far along you are. Twenty characters of bar fixes that.
+# knowing how far along you are. A bar answers where; the estimate answers how
+# much longer, which is the part somebody watching actually wants.
+#
+# The estimate is elapsed / done * remaining. Packs are wildly uneven - rgthree
+# clones in three seconds, ComfyUI-Manager takes twenty-one - so the first
+# guesses swing far too hard to show, and it stays hidden until three have
+# landed.
+#
+# The rate is measured off disk. git clone reports nothing usable about bytes,
+# so each pack's folder is sized once it is there and added to a running total.
+# That makes it the throughput of the whole step, clones and the pip wheels that
+# follow them alike, which is why it reads lower than the network at its best -
+# and is the number that actually predicts the finish.
 function Show-NodeProgress {
-    param([int]$Done, [int]$Total, [string]$Name, [System.Diagnostics.Stopwatch]$Clock)
+    param([int]$Done, [int]$Total, [string]$Name,
+          [System.Diagnostics.Stopwatch]$Clock, [double]$Bytes = 0)
     $filled = [int](20 * $Done / [Math]::Max($Total, 1))
     $bar = ('#' * $filled) + ('-' * (20 - $filled))
     $el = $Clock.Elapsed
-    Write-Step ("  [{0,2}/{1}] {2}  {3,5:mm\:ss}  {4}" -f $Done, $Total, $bar, $el, $Name) "White"
+
+    # Blank rather than a wrong number until three packs have landed. Timings
+    # are lumpy enough at the start - a three-second clone next to a
+    # twenty-second one - that the first estimates are noise.
+    $eta = "   --:--"
+    if ($Done -ge 3 -and $el.TotalSeconds -gt 0) {
+        $per = $el.TotalSeconds / $Done
+        $left = [TimeSpan]::FromSeconds($per * ($Total - $Done))
+        $eta = "ETA {0:00}:{1:00}" -f [int]$left.TotalMinutes, $left.Seconds
+    }
+
+    # Padded to the same width when there is nothing to report, so the name
+    # column does not jump about between lines.
+    $rate = "          "
+    if ($Bytes -gt 0 -and $el.TotalSeconds -gt 1) {
+        $rate = "{0,5:N1} MB/s" -f (($Bytes / 1MB) / $el.TotalSeconds)
+    }
+
+    Write-Step ("  [{0,2}/{1}] {2} {3:mm\:ss} {4} {5}  {6}" -f `
+                $Done, $Total, $bar, $el, $eta, $rate, $Name) "White"
 }
 
 foreach ($Node in $NodesConfig) {
@@ -764,18 +797,22 @@ foreach ($Node in $NodesConfig) {
         $VendorDir = Join-Path $RootPath "vendor\custom_nodes\$($Node.folder)"
         $ErrorActionPreference = "Continue"
         if (Test-Path $VendorDir) {
-            Show-NodeProgress $NodeIndex $NodeTotal "$($Node.name) - from vendored copy" $NodeClock
+            Show-NodeProgress $NodeIndex $NodeTotal "$($Node.name) - from vendored copy" $NodeClock $NodeBytes
             Copy-Item -Recurse -Force $VendorDir $NodeDir
             $out = "vendored"
             & cmd /c exit 0   # reset LASTEXITCODE so the success branch below runs
         } else {
-            Show-NodeProgress $NodeIndex $NodeTotal $Node.name $NodeClock
+            Show-NodeProgress $NodeIndex $NodeTotal $Node.name $NodeClock $NodeBytes
             $out = & git clone --depth 1 --recurse-submodules $Node.url "$NodeDir" 2>&1 | Out-String
         }
         $ErrorActionPreference = "Stop"
 
         if ($LASTEXITCODE -eq 0) {
             $Installed++
+            try {
+                $NodeBytes += (Get-ChildItem $NodeDir -Recurse -File -Force -ErrorAction SilentlyContinue |
+                               Measure-Object Length -Sum).Sum
+            } catch { }
             # Install node requirements
             $ReqFile = Join-Path $NodeDir "requirements.txt"
             if (Test-Path $ReqFile) {
