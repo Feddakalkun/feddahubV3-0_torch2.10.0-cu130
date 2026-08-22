@@ -8,6 +8,12 @@ interface LoraSelectorProps {
   strength: number;
   onStrengthChange: (value: number) => void;
   options: string[];
+  /**
+   * How many of `options`, from the front, the workflow actually asks for.
+   * The rest follow and are shown under their own heading - present, not
+   * hidden, which is the whole point of the change that introduced this.
+   */
+  matchCount?: number;
   accent?: 'violet' | 'emerald';
 }
 
@@ -38,16 +44,24 @@ export const LoraSelector = ({
   strength,
   onStrengthChange,
   options,
+  matchCount = 0,
   accent = 'violet',
 }: LoraSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const token = ACCENT[accent];
 
-  const filtered = useMemo(
-    () => options.filter((o) => toLabel(o).toLowerCase().includes(query.toLowerCase())),
-    [options, query],
-  );
+  // Two lists while browsing, one while searching. Once somebody has typed,
+  // they are after a name rather than a category, and the split is in the way -
+  // but the matching ones still come first, so a query hitting both groups puts
+  // the one for this workflow on top.
+  const q = query.trim().toLowerCase();
+  const { forThis, others } = useMemo(() => {
+    const hit = options.slice(0, matchCount);
+    const rest = options.slice(matchCount);
+    const keep = (o: string) => !q || toLabel(o).toLowerCase().includes(q) || o.toLowerCase().includes(q);
+    return { forThis: hit.filter(keep), others: rest.filter(keep) };
+  }, [options, matchCount, q]);
 
   return (
     <div className="space-y-2">
@@ -91,7 +105,12 @@ export const LoraSelector = ({
             >
               None (use workflow default)
             </button>
-            {filtered.map((item) => (
+            {forThis.length > 0 && (
+              <p className="px-2.5 pt-1 pb-0.5 text-[8px] font-black uppercase tracking-[0.2em] text-white/25">
+                For this workflow
+              </p>
+            )}
+            {forThis.map((item) => (
               <button
                 key={item}
                 onClick={() => { onChange(item); setOpen(false); }}
@@ -104,6 +123,36 @@ export const LoraSelector = ({
                 {toLabel(item)}
               </button>
             ))}
+
+            {/* The second heading earns its place: it is the one that tells
+                somebody their LoRAs are not missing. Filtering them out is
+                what made a library filed by character look empty. */}
+            {others.length > 0 && (
+              <p className="px-2.5 pt-2 pb-0.5 text-[8px] font-black uppercase tracking-[0.2em] text-white/20">
+                {forThis.length > 0 ? `Everything else (${others.length})` : `All LoRAs (${others.length})`}
+              </p>
+            )}
+            {others.map((item) => (
+              <button
+                key={item}
+                onClick={() => { onChange(item); setOpen(false); }}
+                className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] transition-colors ${
+                  value === item
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/35 hover:bg-white/[0.05] hover:text-white/80'
+                }`}
+              >
+                {toLabel(item)}
+              </button>
+            ))}
+
+            {forThis.length === 0 && others.length === 0 && (
+              <p className="px-2.5 py-3 text-[11px] text-white/30">
+                {options.length === 0
+                  ? 'No LoRAs installed yet.'
+                  : `Nothing matches "${query}".`}
+              </p>
+            )}
           </div>
         </div>
       )}

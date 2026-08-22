@@ -447,7 +447,35 @@ class LoRAService:
         return result
 
     def list_lora_names(self) -> List[str]:
-        """Return relative paths of installed LoRAs for use in ComfyUI (relative to loras dir)."""
+        """Every LoRA a workflow can reference, as ComfyUI would name it.
+
+        Asks ComfyUI rather than scanning a folder. `self.lora_dir` is the
+        install's own `ComfyUI/models/loras`, and extra_model_paths.yaml can
+        point at any number of roots besides it - a library on another drive is
+        the normal case, not the exception. Scanning one directory therefore
+        reported none of it: ComfyUI offered 987 names while this returned an
+        empty list, and the picker said "Search 0 LoRAs..." on a machine full of
+        them.
+
+        Same reasoning as comfy_output_types() in workflow_service: the question
+        is "what does ComfyUI have", so ask ComfyUI. Only it has resolved every
+        search path.
+
+        The folder walk remains the fallback, because the server can be asked
+        this before ComfyUI has finished starting.
+        """
+        try:
+            with urlopen("http://127.0.0.1:8199/object_info/LoraLoader", timeout=5) as resp:
+                data = json.loads(resp.read().decode("utf-8", errors="ignore"))
+            names = (data.get("LoraLoader", {})
+                         .get("input", {})
+                         .get("required", {})
+                         .get("lora_name", [[]])[0])
+            if names:
+                return list(names)
+        except Exception:                              # noqa: BLE001 - fall back, never fail
+            pass
+
         return [info["path"] for info in self.get_installed().values()]
 
     # ─── Characters ─────────────────────────────────────────────────────────

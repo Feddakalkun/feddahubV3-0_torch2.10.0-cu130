@@ -245,6 +245,9 @@ export const WorkflowPage = ({
     {},
   );
   const [availableLoras, setAvailableLoras] = useState<Record<string, string[]>>({});
+  // How many of each slot's list matched the workflow, so the picker knows
+  // where to draw the line between "for this workflow" and everything else.
+  const [loraMatchCounts, setLoraMatchCounts] = useState<Record<string, number>>({});
   const [nodeOptions, setNodeOptions] = useState<Record<string, string[]>>({});
 
   // Selects read their options straight off ComfyUI's node schema, so the list
@@ -280,13 +283,25 @@ export const WorkflowPage = ({
     comfyService.getLoras()
       .then((all) => {
         const next: Record<string, string[]> = {};
+        const counts: Record<string, number> = {};
         for (const slot of slots) {
-          next[slot.key] = all.filter((entry) => {
+          // `match` used to filter this list. It matches on the path, and the
+          // path is whatever the user called their folders - a library filed by
+          // character rather than by base model lost every LoRA to a slot
+          // looking for "wan". The information is still worth having, so it
+          // orders the list instead of cutting it: expected ones first, the
+          // rest after, nothing hidden.
+          const hit: string[] = [];
+          const rest: string[] = [];
+          for (const entry of all) {
             const norm = entry.replace(/\\/g, '/').toLowerCase();
-            return slot.needles.some((m) => norm.includes(m));
-          });
+            (slot.needles.some((m) => norm.includes(m)) ? hit : rest).push(entry);
+          }
+          next[slot.key] = [...hit, ...rest];
+          counts[slot.key] = hit.length;
         }
         setAvailableLoras(next);
+        setLoraMatchCounts(counts);
       })
       .catch(() => {});
   }, [loraKey]);
@@ -755,6 +770,7 @@ export const WorkflowPage = ({
                       [slot.key]: { name: prev[slot.key]?.name ?? '', strength },
                     }))}
                     options={availableLoras[slot.key] ?? []}
+                    matchCount={loraMatchCounts[slot.key] ?? 0}
                     accent="violet"
                   />
                 ))}
