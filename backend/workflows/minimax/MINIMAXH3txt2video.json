@@ -77,7 +77,7 @@
   "148": {
     "inputs": {
       "scheduler": "simple",
-      "steps": 20,
+      "steps": 8,
       "denoise": 1,
       "model": [
         "154",
@@ -150,9 +150,9 @@
   "153": {
     "inputs": {
       "prompt": "Ultra-cinematic science fiction commercial, Hollywood quality, photorealistic, volumetric lighting, ray-traced reflections, dramatic atmosphere.\n\nThe camera travels through complete darkness until countless glowing blue particles begin assembling into an enormous futuristic neural network floating in space. Energy races through billions of connections as metallic letters slowly emerge from within the network.\n\nThe words **\"MINIMAX H3\"** ignite with brilliant electric blue light.\n\nThe camera accelerates through the letters into an infinite digital universe filled with floating AI-generated worlds: cyberpunk cities, fantasy kingdoms, realistic humans, cinematic creatures, futuristic robots, magical forests, and surreal dreamscapes. Every environment seamlessly morphs into the next without visible cuts.\n\nFinally, the camera bursts through the final world to reveal an elegant holographic workflow composed of glowing ComfyUI nodes connecting themselves automatically.\n\nThe workflow transforms into a polished chrome logo:\n\n**COMFYUI**\n\nBelow it appears:\n\n**CREATE ANYTHING**\n\nEpic cinematic soundtrack, deep bass impacts, futuristic synths, rising orchestral choir.\n\nPerfect typography. No subtitles. No watermark. No misspelled English. Stable camera motion. Premium blockbuster quality.\n",
-      "width": 768,
-      "height": 1344,
-      "length": 158,
+      "width": 736,
+      "height": 1280,
+      "length": 124,
       "clip": [
         "144",
         0
