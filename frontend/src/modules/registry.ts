@@ -87,6 +87,11 @@ export const ACTIVE_TAB_STORAGE_KEY = 'fedda_v21_active_tab';
 export const AGENT_ENABLED: string[] = [
   'qwen-rapid-edit-v23',
   'z-image',
+  // First video workflow through the agent. One prompt, one clip - the shape
+  // chat is good at. Director stays off deliberately: its value is the shot
+  // timeline, and a conversation is a worse way to build one than the page
+  // already built for it.
+  'minimax-h3-txt2vid',
 ];
 
 export const EDITORS_CHOICE: string[] = [
