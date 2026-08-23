@@ -135,6 +135,8 @@ export const TopSystemStrip = () => {
   useEffect(() => {
     let mounted = true;
 
+    let retries = 0;
+
     const loadTokenStatus = async () => {
       try {
         const [hfResp, civitaiResp, veniceResp] = await Promise.all([
@@ -160,10 +162,19 @@ export const TopSystemStrip = () => {
           if (legacy && !veniceData.configured) void migrateVeniceKey(legacy);
         }
       } catch {
-        if (mounted) {
-          setHfConfigured(false);
-          setCivitaiConfigured(false);
-          setVeniceConfigured(false);
+        // A failed request is not an answer. The frontend loads before the
+        // backend finishes starting, so on a cold start this used to fire,
+        // fail, and report all three keys missing - on a machine where they
+        // were saved and the backend said so a second later. Nothing then
+        // asked again, and the bar stayed wrong until something else happened
+        // to trigger a refetch.
+        //
+        // So it retries instead of concluding, and leaves the previous answer
+        // standing while it does.
+        if (mounted && retries < 5) {
+          retries += 1;
+          setTimeout(loadTokenStatus, 1500 * retries);
+          return;
         }
       } finally {
         if (mounted) {
