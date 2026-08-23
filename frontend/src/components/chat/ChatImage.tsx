@@ -2,11 +2,30 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 
 /**
- * A chat image: small in the transcript, full size on click.
+ * ComfyUI returns a /comfy/view URL; what it points at is in the filename.
+ *
+ * Reading the extension rather than guessing from the workflow name: the
+ * MiniMax clip came back as 0_00002-audio.mp4, and a rule keyed on words like
+ * "video" or "wan" would have to know every workflow that can emit one.
+ */
+const isVideoUrl = (src: string): boolean => {
+  const m = /[?&]filename=([^&]+)/.exec(src);
+  const name = decodeURIComponent(m ? m[1] : src);
+  return /\.(mp4|webm|mov|mkv|m4v)$/i.test(name);
+};
+
+/**
+ * A chat result: small in the transcript, full size on click.
  *
  * Inline results used to run to 420px, so two of them pushed the input off
  * screen and the conversation stopped being readable. The thumbnail keeps the
  * transcript scannable and the lightbox is where you actually inspect a result.
+ *
+ * Video goes through an actual <video>. It used to come through the <img>
+ * below, which renders precisely nothing - a MiniMax run reported "Done." over
+ * an empty space for seven and a half minutes of work. No lightbox for it: the
+ * player's own controls already carry fullscreen, and a click-to-enlarge
+ * wrapper would swallow the clicks meant for play and scrub.
  */
 export const ChatImage = ({ src, dim = false }: { src: string; dim?: boolean }) => {
   const [open, setOpen] = useState(false);
@@ -18,6 +37,18 @@ export const ChatImage = ({ src, dim = false }: { src: string; dim?: boolean }) 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
+
+  if (isVideoUrl(src)) {
+    return (
+      <video
+        src={src}
+        controls
+        loop
+        playsInline
+        className={`mt-2 max-h-52 rounded-xl ${dim ? 'opacity-90' : ''}`}
+      />
+    );
+  }
 
   return (
     <>
