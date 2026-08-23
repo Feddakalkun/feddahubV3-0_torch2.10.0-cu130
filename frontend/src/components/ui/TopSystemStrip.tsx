@@ -90,11 +90,14 @@ export const TopSystemStrip = () => {
   };
 
   const [hfConfigured, setHfConfigured] = useState(false);
-  const [hfLoading, setHfLoading] = useState(true);
   const [hfSaving, setHfSaving] = useState(false);
   const [civitaiConfigured, setCivitaiConfigured] = useState(false);
-  const [civitaiLoading, setCivitaiLoading] = useState(true);
   const [civitaiSaving, setCivitaiSaving] = useState(false);
+  // One request answers for all three keys, so one flag says whether it has
+  // landed. There were two, and Venice had none - which is why Venice was the
+  // one pill that stated "Missing" from the very first paint, before anything
+  // had been asked.
+  const [keysLoading, setKeysLoading] = useState(true);
   const { progress: download } = useModelDownload();
   // The Venice key moved out of localStorage and into runtime_settings.json, so
   // the backend can use it too - that is what lets a vision model reach the
@@ -137,6 +140,13 @@ export const TopSystemStrip = () => {
 
     let retries = 0;
 
+    // Only once there is an answer - or five failures - do the pills stop
+    // saying "checking" and start making a claim.
+    const settle = () => {
+      if (!mounted) return;
+      setKeysLoading(false);
+    };
+
     const loadTokenStatus = async () => {
       try {
         const [hfResp, civitaiResp, veniceResp] = await Promise.all([
@@ -148,6 +158,9 @@ export const TopSystemStrip = () => {
           hfResp.json(), civitaiResp.json(), veniceResp.json(),
         ]);
         if (mounted) {
+          // A later failure gets its own five attempts, rather than inheriting
+          // a budget already spent on the cold start.
+          retries = 0;
           setHfConfigured(!!hfData.configured);
           setCivitaiConfigured(!!civitaiData.configured);
           setVeniceConfigured(!!veniceData.configured);
@@ -173,15 +186,16 @@ export const TopSystemStrip = () => {
         // standing while it does.
         if (mounted && retries < 5) {
           retries += 1;
+          // Stay in the loading state while retrying. A return still runs a
+          // finally, so clearing it there would show the answer we are in the
+          // middle of admitting we do not have yet.
           setTimeout(loadTokenStatus, 1500 * retries);
           return;
         }
-      } finally {
-        if (mounted) {
-          setHfLoading(false);
-          setCivitaiLoading(false);
-        }
+        settle();
+        return;
       }
+      settle();
     };
 
     loadTokenStatus();
@@ -612,7 +626,9 @@ export const TopSystemStrip = () => {
         onClick={handleVeniceKey}
         disabled={veniceSaving}
         title={
-          !veniceConfigured
+          keysLoading
+            ? 'Checking whether a Venice key is saved'
+            : !veniceConfigured
             ? 'Save your Venice.ai API key (for Venice image + chat)'
             : veniceValid === false
               ? 'Venice rejected this key - click to replace it'
@@ -621,15 +637,19 @@ export const TopSystemStrip = () => {
                 : 'Venice key saved - click to replace it'
         }
         className={`${PILL} disabled:opacity-40 ${
-          !veniceConfigured || veniceValid === false
+          keysLoading
+            ? 'border-white/10 bg-white/5 text-slate-500'
+            : !veniceConfigured || veniceValid === false
             ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18'
             : veniceUsd !== null && veniceUsd < 1
               ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18'
               : 'border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/18'
         }`}
       >
-        {veniceSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
-        {!veniceConfigured
+        {(veniceSaving || keysLoading) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+        {keysLoading
+          ? 'Venice Key'
+          : !veniceConfigured
           ? 'Venice Key Missing'
           : veniceValid === false
             ? 'Venice Key Rejected'
@@ -643,13 +663,15 @@ export const TopSystemStrip = () => {
         disabled={civitaiSaving}
         title="Save Civitai API key for Civitai model downloads"
         className={`${PILL} disabled:opacity-40 ${
-          civitaiConfigured
+          keysLoading
+            ? 'border-white/10 bg-white/5 text-slate-500'
+            : civitaiConfigured
             ? 'border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/18'
             : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18'
         }`}
       >
-        {(civitaiSaving || civitaiLoading) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
-        {civitaiSaving ? 'Saving Key' : civitaiConfigured ? 'Civitai Key Set' : 'Civitai Key Missing'}
+        {(civitaiSaving || keysLoading) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+        {civitaiSaving ? 'Saving Key' : keysLoading ? 'Civitai Key' : civitaiConfigured ? 'Civitai Key Set' : 'Civitai Key Missing'}
       </button>
 
       <button
@@ -657,13 +679,15 @@ export const TopSystemStrip = () => {
         disabled={hfSaving}
         title="Save Hugging Face token for gated model downloads"
         className={`${PILL} disabled:opacity-40 ${
-          hfConfigured
+          keysLoading
+            ? 'border-white/10 bg-white/5 text-slate-500'
+            : hfConfigured
             ? 'border-sky-500/30 bg-sky-500/10 text-sky-300 hover:bg-sky-500/18'
             : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/18'
         }`}
       >
-        {(hfSaving || hfLoading) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
-        {hfSaving ? 'Saving Token' : hfConfigured ? 'HF Token Set' : 'HF Token Missing'}
+        {(hfSaving || keysLoading) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+        {hfSaving ? 'Saving Token' : keysLoading ? 'HF Token' : hfConfigured ? 'HF Token Set' : 'HF Token Missing'}
       </button>
 
       {/* ComfyUI status */}
