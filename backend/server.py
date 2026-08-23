@@ -3318,6 +3318,27 @@ _RATIOS = ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"]
 _SKIP_TYPES = {"object", "nsfw_toggle"}
 
 
+def _is_file_slot(node_class: str, default: Any, node_known: bool) -> bool:
+    """Does this input actually take a file the user uploads?
+
+    The key name alone cannot say. `frame_rate` contains "frame" and
+    `mask_blur_amount` contains "mask", so matching file hints as substrings
+    turned both into required uploads: MiniMax Text to Video opened with "Drop
+    in a fps", offered a paste button for it, and counted it as still needed -
+    in a workflow that takes no image at all. Twelve workflows carry a
+    frame_rate; the mask numbers reach a dozen more.
+
+    A real file slot feeds a loader node and holds a filename. Both halves are
+    needed: VHS_LoadVideo takes a video AND a frame_load_cap, and
+    MiniMaxH3DirectorCS takes a ref_image_size whose value is the word "match".
+    """
+    if not node_known:
+        return True   # nothing to consult - the old guess beats losing the slot
+    if not isinstance(default, str):
+        return False  # a count, a rate or a toggle is never an upload
+    return "load" in node_class.lower()
+
+
 def _classify_input(key: str, spec: Dict[str, Any], graph: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Turn one workflow_api input into something the chat UI can render."""
     itype = str(spec.get("type", "string"))
@@ -3334,13 +3355,16 @@ def _classify_input(key: str, spec: Dict[str, Any], graph: Dict[str, Any]) -> Op
     # Real default straight from the graph, so chat and page agree.
     default = None
     node_id = spec.get("node_id") or (spec.get("node_ids") or [None])[0]
-    if node_id and node_id in graph:
+    node_known = bool(node_id) and node_id in graph
+    node_class = ""
+    if node_known:
+        node_class = str(graph[node_id].get("class_type") or "")
         default = graph[node_id].get("inputs", {}).get(spec.get("input_key"))
         if isinstance(default, list):
             default = None  # a wired link, not a literal value
 
     low = key.lower()
-    if any(h in low for h in _FILE_HINTS):
+    if any(h in low for h in _FILE_HINTS) and _is_file_slot(node_class, default, node_known):
         kind = "audio" if "audio" in low else "video" if "video" in low else "image"
         return {"key": key, "label": label, "control": "file", "accept": kind,
                 "required": True}
