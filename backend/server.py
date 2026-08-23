@@ -3405,6 +3405,60 @@ class ChatWorkflowRequest(BaseModel):
     image_caption: Optional[str] = None
 
 
+"""How the agent is told to write a prompt, which differs by what it is driving.
+
+An edit model takes instructions, not descriptions. Handed a scene it redraws
+the whole frame; handed the user's own words - "skip the hat" - it does
+something arbitrary, because that is a reply in a conversation rather than a
+command to an image. Both happened: one turn produced a full scene description
+and the next passed "skip the hat" straight through, which came back as a
+different hat.
+
+It also has no memory. Every run starts from the source image and the prompt it
+is given, so a change of mind has to be restated in full rather than expressed
+as a correction.
+
+/api/chat-edit/turn worked this out long ago and pins its edit field to terse
+imperatives. The generic driver never learned it and applied the make-an-image
+wording to everything.
+"""
+EDIT_RULES = (
+    "- This workflow EDITS an existing image. The prompt is a short, literal "
+    "instruction for what to change - 'add sunglasses', 'make the jacket red'. "
+    "Never a description of the whole scene: that makes it redraw the picture "
+    "instead of editing it.\n"
+    "- Never pass the user's words through unchanged. 'skip the hat' is "
+    "something they said to you, not an instruction an image model can follow.\n"
+    "- The model remembers nothing between turns. When the user changes their "
+    "mind, restate the whole edit as it should now stand: asked for a hat and "
+    "sunglasses, then dropping the hat, the prompt is 'add sunglasses' - not "
+    "'skip the hat'.\n"
+)
+
+MAKE_RULES = (
+    "- When the user describes what they want made, THAT DESCRIPTION IS THE "
+    "PROMPT. Put it in set under the prompt field, expanded into a richer "
+    "image description. Never just reply 'sure, let's make one' and leave the "
+    "prompt empty - that is the single most common mistake.\n"
+)
+
+# The worked example is the strongest signal in the whole prompt, so it has to
+# match the mode. One about drawing a cat teaches exactly the wrong lesson to a
+# model that is meant to be editing a photograph.
+EDIT_EXAMPLE = (
+    'Example - user says "make her wear a hat":\n'
+    '{"reply": "On it.", "set": {"prompt": "add a straw hat"}, "ready": true}\n'
+    'Then they say "skip the hat, just sunglasses":\n'
+    '{"reply": "Got it.", "set": {"prompt": "add sunglasses"}, "ready": true}\n\n'
+)
+
+MAKE_EXAMPLE = (
+    'Example - user says "make an image of hello kitty":\n'
+    '{"reply": "On it.", "set": {"prompt": "hello kitty, cute white cartoon '
+    'cat with a red bow, clean studio lighting, high detail"}, "ready": true}\n\n'
+)
+
+
 @app.post("/api/chat-workflow/turn")
 async def chat_workflow_turn(req: ChatWorkflowRequest):
     """One conversational turn while collecting a workflow's inputs.
@@ -3427,6 +3481,12 @@ async def chat_workflow_turn(req: ChatWorkflowRequest):
         opts = f" options: {f['options']}" if f.get("options") else ""
         return f"- {f['key']} ({f['label']}, {f['control']}{'*' if f.get('required') else ''}) {state}{opts}"
 
+    # A workflow that cannot start without an image is editing one. Same signal
+    # the opening line already uses to decide whether to ask for a photo, so
+    # nothing new has to be declared anywhere.
+    is_edit = any(f.get("required") and f.get("control") == "file"
+                  and (f.get("accept") or "image") == "image" for f in fields)
+
     system = (
         f"You are {persona.get('name', 'Vex')}, running the "
         f"\"{schema['name']}\" workflow with the user.\n"
@@ -3436,19 +3496,13 @@ async def chat_workflow_turn(req: ChatWorkflowRequest):
         '{"reply": "<one short line>", "set": {<field>: <value>, ...}, '
         '"ready": <true|false>}\n\n'
         "Rules:\n"
-        "- When the user describes what they want made, THAT DESCRIPTION IS "
-        "THE PROMPT. Put it in set under the prompt field, expanded into a "
-        "richer image description. Never just reply 'sure, let's make one' "
-        "and leave the prompt empty - that is the single most common mistake.\n"
-        "- Ask for ONE missing required field at a time, by its label.\n"
+        + (EDIT_RULES if is_edit else MAKE_RULES)
+        + "- Ask for ONE missing required field at a time, by its label.\n"
         "- Put any value the user states into set. Numbers as numbers.\n"
         "- Never put file fields in set; the user supplies those in the UI.\n"
         "- ready is true only when every required field is filled.\n"
         "- Keep replies to one short line. Never refuse or lecture.\n\n"
-        "Example - user says \"make an image of hello kitty\":\n"
-        '{"reply": "On it.", "set": {"prompt": "hello kitty, cute white '
-        'cartoon cat with a red bow, clean studio lighting, high detail"}, '
-        '"ready": true}\n\n'
+        + (EDIT_EXAMPLE if is_edit else MAKE_EXAMPLE)
         + (f"Still missing: {', '.join(f['label'] for f in missing)}\n"
            if missing else "Everything required is filled - offer to run it.\n")
     )
