@@ -60,6 +60,15 @@ interface ComfyExecutionContextType {
     registerNodeMap: (nodeMap: Record<string, NodeInfo>) => void;
     // Start executing state immediately (use when submitting via /api/generate so the bar shows during model loading)
     startExecution: () => void;
+    /**
+     * The counterpart to startExecution, for the same callers.
+     *
+     * Both ways out of `executing` are websocket events, and those only arrive
+     * for jobs this browser queued. A run submitted through /api/generate polls
+     * for its own result, so without this the bar stayed on LOADING… forever -
+     * which is exactly what it did.
+     */
+    finishExecution: () => void;
     cancelExecution: () => Promise<void>;
     clearOutputs: () => void;
 }
@@ -337,6 +346,12 @@ export const ComfyExecutionProvider = ({ children }: { children: React.ReactNode
         return () => clearInterval(id);
     }, [state]);
 
+    // Only acts while a run is in flight, so a late websocket event and a
+    // finished poll cannot fight over the state.
+    const finishExecution = useCallback(() => {
+        if (stateRef.current === 'executing') transitionToDone();
+    }, [transitionToDone]);
+
     const startExecution = useCallback(() => {
         cancelledRef.current = false;
         if (doneTimerRef.current) {
@@ -496,6 +511,7 @@ export const ComfyExecutionProvider = ({ children }: { children: React.ReactNode
             queueWorkflow,
             registerNodeMap: (nm) => { nodeMapRef.current = nm; },
             startExecution,
+            finishExecution,
             cancelExecution,
             clearOutputs,
         }}>

@@ -220,6 +220,35 @@
 }
 
 /* ──────────────────────────────────────────
+   Native dropdowns
+────────────────────────────────────────── */
+/*
+ * A <select> takes whatever classes it is given, but the list it opens is drawn
+ * by the browser and inherits none of them. On a dark page that meant white
+ * panels with pale grey text on them - the app's own text colour against the
+ * platform's own background, which is unreadable in a way no component author
+ * would notice, because it only appears while the menu is open.
+ *
+ * Set here rather than on seventeen call sites, and on `option` as well as
+ * `select`, since the two are painted separately.
+ */
+select {
+  background-color: #14141b;
+  color: rgb(var(--c-white) / 0.85);
+}
+
+select option {
+  background-color: #14141b;
+  color: rgb(var(--c-white) / 0.85);
+}
+
+select option:checked,
+select option:hover {
+  background-color: #23232e;
+  color: rgb(var(--c-white));
+}
+
+/* ──────────────────────────────────────────
    Theme utility classes
 ────────────────────────────────────────── */
 .theme-bg-app     { background-color: var(--bg-app);     transition: background-color 0.5s ease; }

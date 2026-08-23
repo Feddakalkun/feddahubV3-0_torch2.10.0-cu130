@@ -130,7 +130,7 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
 
   // /api/generate skips queueWorkflow, so the execution context has to be told
   // a job started or the output strip and live preview stay dead here.
-  const { registerNodeMap, startExecution, previewUrl } = useComfyExecution();
+  const { registerNodeMap, startExecution, finishExecution, previewUrl } = useComfyExecution();
 
   const fileFields = useMemo(() => fields.filter((f) => f.control === 'file'), [fields]);
   const settingFields = useMemo(() => fields.filter((f) => f.control !== 'file'), [fields]);
@@ -578,6 +578,9 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setRunning(false);
+      // The bar was told this started; it has to be told it stopped. A failed
+      // run leaves it spinning otherwise, which reads as still working.
+      finishExecution();
     }
   };
 
