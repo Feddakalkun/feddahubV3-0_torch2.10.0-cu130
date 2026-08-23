@@ -386,7 +386,23 @@ try {
                     "    style_models: style_models/",
                     "    embeddings: embeddings/",
                     "    unet_gguf: unet_gguf/",
-                    "    llm_gguf: llm_gguf/"
+                    "    llm_gguf: llm_gguf/",
+                    # Folders custom nodes register rather than ComfyUI core.
+                    # Without these the node sees an empty list and refuses the
+                    # prompt with "not in []" - which is what happened to
+                    # SAMLoader and UltralyticsDetectorProvider once the model
+                    # library moved to another drive: the files were there, and
+                    # nothing had told ComfyUI to look.
+                    #
+                    # Impact-Pack's own names, not the folder layout: it
+                    # registers ultralytics_bbox and ultralytics_segm, which
+                    # live one level down inside ultralytics/.
+                    "    sams: sams/",
+                    "    ultralytics_bbox: ultralytics/bbox/",
+                    "    ultralytics_segm: ultralytics/segm/",
+                    "    insightface: insightface/",
+                    "    ipadapter: ipadapter/",
+                    "    inpaint: inpaint/"
                 )
                 $Yaml = (@(
                     "# Written by run.ps1 from config/runtime_settings.json.",

@@ -486,7 +486,16 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
     // boundary that cares, rather than a half-object travelling through the UI.
     // An empty pick sends an empty list, which is how the backend is told to
     // clear the slot rather than leave whatever the graph shipped with.
-    const payload: Record<string, unknown> = { ...sized };
+    // Anything the agent never filled is left out entirely, so the graph keeps
+    // the value its author put there. Sending "" is not "no opinion", it is an
+    // instruction to blank the field - which is what emptied a KSampler's steps
+    // and seed and made ComfyUI refuse the whole prompt.
+    const payload: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(sized)) {
+      if (v === undefined || v === null) continue;
+      if (typeof v === 'string' && v.trim() === '') continue;
+      payload[k] = v;
+    }
     for (const f of fields) {
       if (f.control !== 'lora') continue;
       const picked = String(sized[f.key] ?? '').trim();

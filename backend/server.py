@@ -3356,7 +3356,13 @@ def _classify_input(key: str, spec: Dict[str, Any], graph: Dict[str, Any]) -> Op
     if low == "direction":
         return {"key": key, "label": label, "control": "chips", "required": False,
                 "options": ["Horizontal", "Vertical"], "default": default or "Horizontal"}
-    if itype == "number":
+    # The graph decides, not the mapping. Most numeric inputs are declared
+    # without a `type` - "seed": {"node_id": "3", "input_key": "seed"} - and
+    # used to fall through to the text branch below, whose default is "". The
+    # chat then sent that empty string and the backend wrote it over a working
+    # number, which is how a Z-Image run died on steps, cfg, seed and denoise
+    # all arriving as ''. The node already told us what it holds.
+    if itype == "number" or isinstance(default, (int, float)):
         return {"key": key, "label": label, "control": "number", "required": False,
                 "default": default if isinstance(default, (int, float)) else 0}
     return {"key": key, "label": label, "control": "text", "required": False,
