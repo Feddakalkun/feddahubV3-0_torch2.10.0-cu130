@@ -4,6 +4,8 @@ import {
 } from 'lucide-react';
 import { BACKEND_API } from '../config/api';
 import { ChatImage } from '../components/chat/ChatImage';
+import { LoraSelector } from '../components/ui/LoraSelector';
+import { comfyService } from '../services/comfyService';
 import { useComfyExecution } from '../contexts/ComfyExecutionContext';
 import { cn } from '../lib/styles';
 
@@ -26,7 +28,7 @@ const MODEL_KEY = 'fedda.chat.model';
 type Field = {
   key: string;
   label: string;
-  control: 'file' | 'text' | 'chips' | 'number';
+  control: 'file' | 'text' | 'chips' | 'number' | 'lora';
   required?: boolean;
   options?: string[];
   default?: string | number;
@@ -115,6 +117,11 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
   const [dragDepth, setDragDepth] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [models, setModels] = useState<string[]>([]);
+  // Every LoRA ComfyUI can see, with the ones this workflow names first. The
+  // ordering is the picker's whole trick: nothing is hidden, but you do not
+  // scroll past nine hundred to reach the four that fit.
+  const [loras, setLoras] = useState<string[]>([]);
+  const [loraMatches, setLoraMatches] = useState(0);
   const [model, setModel] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
@@ -220,6 +227,23 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
       if (saved && available.includes(saved)) setModel(saved);
     })();
   }, []);
+
+  // Only when the workflow has a slot for them.
+  useEffect(() => {
+    if (!fields.some((f) => f.control === 'lora')) return;
+    let cancelled = false;
+    comfyService.getLoras()
+      .then((all) => {
+        if (cancelled) return;
+        const needle = workflowId.split('-')[0].toLowerCase();
+        const hit = all.filter((e) => e.replace(/\\/g, '/').toLowerCase().includes(needle));
+        const rest = all.filter((e) => !hit.includes(e));
+        setLoras([...hit, ...rest]);
+        setLoraMatches(hit.length);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [fields, workflowId]);
 
   const chooseModel = (n: string) => {
     setModel(n);
@@ -456,6 +480,19 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
     // Only send a size when the workflow exposes one and we know the source.
     const sized = hasSize && dims ? { ...base, ...(fitToBudget(dims.w, dims.h) || {}) } : base;
 
+    // A LoRA is a plain path everywhere in this page - that is what the picker
+    // stores and what the transcript can echo back. workflow_service wants a
+    // list of {name, strength}, so the conversion happens here, at the one
+    // boundary that cares, rather than a half-object travelling through the UI.
+    // An empty pick sends an empty list, which is how the backend is told to
+    // clear the slot rather than leave whatever the graph shipped with.
+    const payload: Record<string, unknown> = { ...sized };
+    for (const f of fields) {
+      if (f.control !== 'lora') continue;
+      const picked = String(sized[f.key] ?? '').trim();
+      payload[f.key] = picked ? [{ name: picked, strength: 1 }] : [];
+    }
+
     setRunning(true);
     setError(null);
     setMessages((m) => [...m, { role: 'agent', text: 'Running…', pending: true }]);
@@ -470,7 +507,7 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
       const res = await fetch(`${BACKEND_API.BASE_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflow_id: workflowId, params: sized }),
+        body: JSON.stringify({ workflow_id: workflowId, params: payload }),
       });
       const queued = await res.json().catch(() => ({}));
       if (!res.ok || !queued.prompt_id) {
@@ -639,6 +676,22 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
                             : 'bg-white/[0.06] text-white/40 hover:bg-white/[0.1] hover:text-white')}
             >{o}</button>
           ))}
+        </div>
+      );
+    }
+    if (f.control === 'lora') {
+      return (
+        <div key={f.key} className="min-w-[220px] flex-1">
+          <LoraSelector
+            label={f.label}
+            value={String(value ?? '')}
+            onChange={(name) => setValues((v) => ({ ...v, [f.key]: name }))}
+            strength={1}
+            onStrengthChange={() => { /* the full page has the slider */ }}
+            options={loras}
+            matchCount={loraMatches}
+            accent="violet"
+          />
         </div>
       );
     }

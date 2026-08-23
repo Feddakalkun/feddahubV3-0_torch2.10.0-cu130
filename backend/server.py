@@ -3310,7 +3310,12 @@ CHAT_EDIT_MEMORY_CAP = 30
 
 _FILE_HINTS = ("image", "audio", "video", "frame", "portrait", "mask")
 _RATIOS = ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"]
-_SKIP_TYPES = {"loras", "object", "nsfw_toggle"}
+# `loras` used to be here, dropped with the note "advanced slots stay on the
+# full page". That held while the agent was an edit box; it does not now that
+# the agent is how a workflow gets driven, because a character LoRA is most of
+# the reason to run Z-Image and the page it sends you to is the one the agent
+# replaces.
+_SKIP_TYPES = {"object", "nsfw_toggle"}
 
 
 def _classify_input(key: str, spec: Dict[str, Any], graph: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -3319,6 +3324,12 @@ def _classify_input(key: str, spec: Dict[str, Any], graph: Dict[str, Any]) -> Op
     label = spec.get("label") or key
     if itype in _SKIP_TYPES:
         return None  # advanced slots stay on the full page, not in chat
+
+    # One picker, whatever the graph's slot count. The Power Lora Loader ships
+    # lora_1 and workflow_service appends the rest itself, so offering two here
+    # would imply an ordering nothing guarantees.
+    if itype == "loras":
+        return {"key": key, "label": label, "control": "lora", "required": False}
 
     # Real default straight from the graph, so chat and page agree.
     default = None
