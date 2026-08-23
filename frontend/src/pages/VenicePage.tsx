@@ -152,15 +152,23 @@ const VENICE_IMAGE_MODELS = [
   { id: 'qwen-image', label: 'Qwen Image' },
 ];
 
-// Chat Models
-const VENICE_CHAT_MODELS = [
-  { id: 'kimi-k2-5', label: 'Kimi K2.5' },
-  { id: 'zai-org-glm-5-1', label: 'GLM 5.1 (Strong Reasoning & Tools)' },
-  { id: 'kimi-k2-6', label: 'Kimi K2.6' },
-  { id: 'qwen3-6-27b', label: 'Qwen 3 27B' },
-  { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro' },
-  { id: 'claude-opus-4-6', label: 'Claude Opus 4.6 (Anonymized)' },
-];
+/**
+ * Readable names for the models worth naming. A decoration on the list Venice
+ * returns, never the list itself.
+ *
+ * This used to be the list, six ids hardcoded, and two had rotted:
+ * deepseek-v4-pro became deepseek-v4-pro-0813 and Venice stopped serving Claude
+ * altogether. Both still sat in the dropdown, and choosing one failed with an
+ * API error that explained nothing. A fixed list against a provider that renames
+ * and retires models only looks right until somebody picks the wrong one.
+ */
+const NICE_NAMES: Record<string, string> = {
+  'kimi-k2-5': 'Kimi K2.5',
+  'kimi-k2-6': 'Kimi K2.6',
+  'zai-org-glm-5-1': 'GLM 5.1 (Strong Reasoning & Tools)',
+  'qwen3-6-27b': 'Qwen 3 27B',
+  'deepseek-v4-pro-0813': 'DeepSeek V4 Pro',
+};
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -353,6 +361,42 @@ export function VenicePage() {
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatModel, setChatModel] = useState('kimi-k2-5');
+  // Fetched, not fixed. Sorted cheapest first and labelled with the output
+  // price, which is the number that bites - a reply costs several times the
+  // prompt that asked for it, and the spread here is 170x.
+  const [chatModels, setChatModels] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${BACKEND_API.BASE_URL}/api/venice/models?type=text`);
+        const d = await r.json();
+        const rows: any[] = d?.data || d?.models || [];
+        if (cancelled || !rows.length) return;
+        const list = rows
+          .filter((m) => m?.id)
+          .map((m) => {
+            const out = m?.model_spec?.pricing?.output?.usd;
+            const inp = m?.model_spec?.pricing?.input?.usd;
+            const name = NICE_NAMES[m.id] || m.id;
+            return {
+              id: m.id as string,
+              label: out !== undefined ? `${name}  ·  $${out}/M out` : name,
+              cost: (out ?? 0) + (inp ?? 0),
+            };
+          })
+          .sort((a, b) => a.cost - b.cost)
+          .map(({ id, label }) => ({ id, label }));
+        setChatModels(list);
+        // The saved pick can name a model Venice has since retired. Fall back
+        // to the cheapest rather than leaving a dead id selected.
+        if (!list.some((m) => m.id === chatModel)) setChatModel(list[0].id);
+      } catch { /* leave the picker empty rather than block the page */ }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [enableWebSearch, setEnableWebSearch] = useState(true);
   const [chatTemperature, setChatTemperature] = useState(0.7);
   const [isChatGenerating, setIsChatGenerating] = useState(false);
@@ -1288,7 +1332,7 @@ Current context: User is requesting images of Elara at the safari camp, now spec
                       title="If you hit overload (429), switch models or retry in a minute."
                       className="rounded-lg fedda-input px-3 py-1.5 text-sm focus:border-violet-500/40"
                     >
-                      {VENICE_CHAT_MODELS.map(m => (
+                      {chatModels.map(m => (
                         <option key={m.id} value={m.id}>{m.label}</option>
                       ))}
                     </select>

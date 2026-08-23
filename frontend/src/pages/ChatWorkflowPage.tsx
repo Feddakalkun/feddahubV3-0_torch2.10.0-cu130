@@ -207,7 +207,12 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
       try {
         const res = await fetch(`${BACKEND_API.BASE_URL}/api/ollama/models`);
         const data = await res.json();
-        available = Array.isArray(data.models) ? data.models : [];
+        // Embedding models turn text into vectors; they cannot hold a
+        // conversation. Offered in a chat picker, one produces no reply and no
+        // error that says why - so nomic-embed-text and its kin are dropped.
+        const EMBEDDING = /(^|[-_/])(embed|embedding|bge|gte|e5)([-_:]|$)/i;
+        available = (Array.isArray(data.models) ? data.models : [])
+          .filter((m: string) => !EMBEDDING.test(m));
         setModel(saved && available.includes(saved) ? saved : (data.text_model || ''));
       } catch { /* Venice may still be usable on its own */ }
 
