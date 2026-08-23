@@ -117,6 +117,11 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
   const [dragDepth, setDragDepth] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [models, setModels] = useState<string[]>([]);
+  // What each entry is called on screen. Venice models carry their price here,
+  // because none of them are free through the API - the free tier is the Venice
+  // web app - and the spread is 170x on output tokens between the cheapest and
+  // the dearest. Picking one without that number is picking blind.
+  const [modelLabels, setModelLabels] = useState<Record<string, string>>({});
   // Every LoRA ComfyUI can see, with the ones this workflow names first. The
   // ordering is the picker's whole trick: nothing is hidden, but you do not
   // scroll past nine hundred to reach the four that fit.
@@ -216,10 +221,29 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
           // user only discovers by getting no reply.
           const vm = await (await fetch(
             `${BACKEND_API.BASE_URL}/api/venice/models?type=text`)).json();
-          const ids: string[] = (vm?.data || vm?.models || [])
-            .map((m: { id?: string } | string) => (typeof m === 'string' ? m : m?.id))
-            .filter(Boolean);
-          available = [...available, ...ids.map((id) => `venice:${id}`)];
+          type VeniceModel = {
+            id?: string;
+            model_spec?: { pricing?: { input?: { usd?: number }; output?: { usd?: number } } };
+          };
+          const rows: VeniceModel[] = vm?.data || vm?.models || [];
+          const labels: Record<string, string> = {};
+          const priced = rows
+            .filter((m) => m?.id)
+            .map((m) => {
+              const p = m.model_spec?.pricing;
+              const inUsd = p?.input?.usd;
+              const outUsd = p?.output?.usd;
+              const key = `venice:${m.id}`;
+              // Output is the number that bites - a reply costs far more than
+              // the prompt that asked for it - so it leads.
+              labels[key] = outUsd !== undefined
+                ? `Venice · ${m.id}  $${outUsd}/M out`
+                : `Venice · ${m.id}`;
+              return { key, cost: (outUsd ?? 0) + (inUsd ?? 0) };
+            })
+            .sort((a, b) => a.cost - b.cost);
+          setModelLabels(labels);
+          available = [...available, ...priced.map((p) => p.key)];
         }
       } catch { /* no Venice, no extra entries */ }
 
@@ -783,9 +807,7 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
           >
             <option value="">Default model</option>
             {models.map((m) => (
-              <option key={m} value={m}>
-                {m.startsWith('venice:') ? `Venice · ${m.slice(7)}` : m}
-              </option>
+              <option key={m} value={m}>{modelLabels[m] ?? m}</option>
             ))}
           </select>
         )}
