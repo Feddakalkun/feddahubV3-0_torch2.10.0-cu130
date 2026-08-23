@@ -552,8 +552,23 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
         throw new Error(queued.detail || 'ComfyUI did not accept the job');
       }
 
-      for (let i = 0; i < 400; i += 1) {
-        await new Promise((r) => setTimeout(r, 1500));
+      // Ask ComfyUI whether the job is still its problem, rather than asking a
+      // clock whether we are bored yet. A 158-frame video at 768x1344 ran for
+      // nearly fourteen minutes against a fixed 400 x 1.5s ceiling and was
+      // declared timed out with the GPU sitting at 23.4 GB and 71 C. The wait
+      // was measuring the wrong thing: ten minutes is a generous image, and a
+      // short video.
+      //
+      // While the prompt sits in queue_running or queue_pending it is alive, so
+      // the wait continues. What ends it is the job leaving ComfyUI entirely -
+      // checked just below, and the honest end of a wait. The hour is a
+      // backstop against a loop nobody is watching, not a guess at render time.
+      const startedAt = Date.now();
+      const BACKSTOP_MS = 60 * 60 * 1000;
+      for (let i = 0; Date.now() - startedAt < BACKSTOP_MS; i += 1) {
+        // Quick turnaround while a short job might already be done, then easier
+        // on a render measured in minutes.
+        await new Promise((r) => setTimeout(r, i < 40 ? 1500 : 3000));
         const poll = await fetch(
           `${BACKEND_API.BASE_URL}/api/generate/status/${encodeURIComponent(queued.prompt_id)}`);
         const data = await poll.json();
@@ -601,7 +616,7 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
         );
         return;
       }
-      throw new Error('Timed out waiting for output');
+      throw new Error('Gave up after an hour - the job may still be running in ComfyUI');
     } catch (e) {
       setMessages((m) => m.filter((x) => !x.pending));
       setError(e instanceof Error ? e.message : String(e));
