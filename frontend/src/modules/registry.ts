@@ -149,7 +149,10 @@ export const FEDDA_MODULES: FeddaModule[] = [
     id: 'chat-edit',
     sourceModuleId: 'qwen-image',
     label: 'FEDDA Agent',
-    description: 'Stop filling in forms. Describe what you want and the agent runs the workflow, remembers how you like to work, and builds on every result.',
+    // It sits at the top of the landing page now, so this line is the first
+    // thing anyone reads about the app. "Stop filling in forms" described what
+    // you are spared rather than what you get.
+    description: 'The brain of the whole thing. Say what you want in plain words - it picks the workflow, runs it, remembers how you like to work, and builds on the last result.',
     area: 'home',
     pack: 'booster',
 

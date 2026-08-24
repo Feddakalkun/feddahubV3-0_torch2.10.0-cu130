@@ -235,20 +235,9 @@ export const RichHome = ({ onSelect }: RichHomeProps) => {
           <HFTokenReminder />
         </div>
 
-        {choice.length > 0 && (
-          <section className="flex min-h-0 flex-[2.4] flex-col gap-[0.7vh]">
-            <div className="flex shrink-0 items-center gap-1.5">
-              <Star className="h-3 w-3 fill-amber-300/70 text-amber-300/70" />
-              <p className={ROW_LABEL}>Editor&rsquo;s choice</p>
-            </div>
-            <div className="grid min-h-0 flex-1 gap-[0.9vw]" style={cols(choice.length)}>
-              {choice.map((m) => (
-                <ChoiceCard key={m.id} module={m} onSelect={onSelect} />
-              ))}
-            </div>
-          </section>
-        )}
-
+        {/* The agent first: it is the answer to "what do I do here", and it
+            was the fourth block down, under a menu of workflows to pick
+            between. */}
         {chat && <ChatBanner module={chat} onSelect={onSelect} />}
 
         {topCards.length > 0 && (
@@ -279,6 +268,20 @@ export const RichHome = ({ onSelect }: RichHomeProps) => {
               <HomeCard key={m.id} module={m} onSelect={onSelect} />
             ))}
           </div>
+        )}
+
+        {choice.length > 0 && (
+          <section className="flex min-h-0 flex-[2.4] flex-col gap-[0.7vh]">
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Star className="h-3 w-3 fill-amber-300/70 text-amber-300/70" />
+              <p className={ROW_LABEL}>Editor&rsquo;s choice</p>
+            </div>
+            <div className="grid min-h-0 flex-1 gap-[0.9vw]" style={cols(choice.length)}>
+              {choice.map((m) => (
+                <ChoiceCard key={m.id} module={m} onSelect={onSelect} />
+              ))}
+            </div>
+          </section>
         )}
       </div>
     </div>
