@@ -88,7 +88,6 @@ export const MiniMaxRef8Page = () => {
           placeholder: 'What the subject does, where they are, what it sounds like…',
           rows: 4,
         }}
-        promptBuilder={{ imageKey: 'image', kind: 'video' }}
         settings={[
           { kind: 'slider', key: 'width', label: 'Width', min: 256, max: 1536, step: 32, defaultValue: 736 },
           { kind: 'slider', key: 'height', label: 'Height', min: 256, max: 1536, step: 32, defaultValue: 1280 },

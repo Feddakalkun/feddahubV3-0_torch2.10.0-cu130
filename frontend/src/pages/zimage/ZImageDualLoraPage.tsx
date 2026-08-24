@@ -34,7 +34,6 @@ export const ZImageDualLoraPage = () => (
       negative: { placeholder: 'what to keep out' },
       rows: 4,
     }}
-    promptBuilder={{ kind: 'image' }}
     settings={[
       {
         kind: 'text',

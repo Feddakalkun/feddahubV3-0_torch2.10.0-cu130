@@ -7,7 +7,6 @@ import { useComfyExecution } from '../../contexts/ComfyExecutionContext';
 import { consumeHandoff } from '../../utils/workflowHandoff';
 import { uploadToComfy } from '../../utils/comfyUpload';
 import { WorkflowShell, WorkflowSection } from './WorkflowShell';
-import { PromptAgentBox } from '../workflows/PromptAgentBox';
 import { WorkflowVideoPreviewStrip } from './WorkflowVideoPreviewStrip';
 import { LiveSamplingPreview } from '../workflows/LiveSamplingPreview';
 import { InfoTip } from '../ui/InfoTip';
@@ -142,7 +141,6 @@ export interface WorkflowPageProps {
       prefix it should offer, e.g. "ltx"; omit to leave the builder out. */
   // `kind` decides what the agent writes. Left off it assumes a clip, which
   // is the wrong advice on an image workflow - motion and sound for a still.
-  promptBuilder?: { loraPrefix?: string; imageKey?: string; kind?: 'video' | 'image' };
   /** Anything genuinely bespoke, rendered between Settings and Generate. */
   extraSections?: ReactNode;
   /**
@@ -198,7 +196,6 @@ export const WorkflowPage = ({
   readyMessage = 'Generation ready',
   extraParams,
   promptActions,
-  promptBuilder,
   extraSections,
   extraSectionsTop,
   compactPrompt,
@@ -663,7 +660,6 @@ export const WorkflowPage = ({
             {/* Two boxes side by side: writing on the left, the builder that
                 fills it on the right. Stacked below lg, where two columns would
                 leave both too narrow to use. */}
-            <div className={promptBuilder ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]' : undefined}>
             <div className="min-w-0">
             {prompt.context ? (
               <PromptAssistant
@@ -701,28 +697,6 @@ export const WorkflowPage = ({
                   />
                 )}
               </div>
-            )}
-            </div>
-            {promptBuilder && (
-              <PromptAgentBox
-                workflowId={workflowId}
-                // Frames live in `files`, not `values` - the builder read the
-                // wrong map and so never saw an image at all.
-                image={promptBuilder.imageKey ? files[promptBuilder.imageKey] ?? null : null}
-                // Most video graphs count frames, not seconds: MiniMax exposes
-                // `length` and `frame_rate` and no length_seconds at all, so
-                // this always fell through to 5. The agent then wrote a
-                // five-beat timeline for a clip that runs 1.7s, and the model
-                // had to cram or drop most of it.
-                kind={promptBuilder.kind ?? 'video'}
-                seconds={(() => {
-                  const frames = Number(values.length ?? 0);
-                  const fps = Number(values.frame_rate ?? values.fps ?? 0);
-                  if (frames > 0 && fps > 0) return Math.max(1, Math.round(frames / fps));
-                  return Number(values.length_seconds ?? 5);
-                })()}
-                onPrompt={setPromptText}
-              />
             )}
             </div>
           </WorkflowSection>

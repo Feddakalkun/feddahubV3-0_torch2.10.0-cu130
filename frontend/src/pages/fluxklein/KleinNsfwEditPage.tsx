@@ -39,7 +39,6 @@ export const KleinNsfwEditPage = () => (
       negative: { placeholder: 'what to keep out' },
       rows: 4,
     }}
-    promptBuilder={{ kind: 'image' }}
     loraArrayKey="loras"
     loras={[
       { key: 'refine1', label: 'Refine LoRA', match: ['zimage', 'z-image', 'ZImage'] },

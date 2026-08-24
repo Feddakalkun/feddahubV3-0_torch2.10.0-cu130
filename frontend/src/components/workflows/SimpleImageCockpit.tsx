@@ -1,6 +1,5 @@
 import { useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { Brush, ChevronDown, Loader2, Maximize2, RefreshCw, Sparkles, Upload, X } from 'lucide-react';
-import { PromptAgentBox } from './PromptAgentBox';
 import { PromptBuilderPanel } from './PromptBuilderPanel';
 import { MaskBrush } from './MaskBrush';
 import { PromptAssistant, type PromptContext } from '../ui/PromptAssistant';
@@ -436,21 +435,6 @@ export function SimpleImageCockpit({
             label="Prompt"
             mode={promptMode}
             onModeChange={onPromptModeChange}
-          />
-
-          {/* The agent existed on two video pages and nowhere else, so every
-              image workflow - a dozen of them share this cockpit - offered a
-              bare textarea. kind="image" is what stops it writing timelines
-              and sound effects for a still. */}
-          <PromptAgentBox
-            workflowId={workflowId ?? ''}
-            kind={showOutpaintSettings ? 'outpaint' : 'image'}
-            edges={showOutpaintSettings ? {
-              left: outpaintLeft, top: outpaintTop,
-              right: outpaintRight, bottom: outpaintBottom,
-            } : undefined}
-            image={uploadedImage ? uploadedImageName ?? null : null}
-            onPrompt={setPrompt}
           />
           </div>
 

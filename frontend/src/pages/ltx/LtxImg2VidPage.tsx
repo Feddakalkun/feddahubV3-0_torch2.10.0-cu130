@@ -32,8 +32,6 @@ export const LtxImg2VidPage = () => {
         negative: { placeholder: DEFAULT_NEGATIVE },
         rows: 4,
       }}
-      // LoRAs under ltx/ only, and the first frame is what gets read.
-      promptBuilder={{ loraPrefix: 'ltx', imageKey: 'image' }}
       settings={[
         {
           kind: 'chips',

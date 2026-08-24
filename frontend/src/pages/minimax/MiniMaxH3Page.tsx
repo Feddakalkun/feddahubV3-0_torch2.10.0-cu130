@@ -136,8 +136,6 @@ export const MiniMaxH3Page = ({ mode }: { mode: Mode }) => {
         negative: { placeholder: DEFAULT_NEGATIVE },
         rows: 4,
       }}
-      promptBuilder={{ imageKey:
-        mode === 'img2vid' || mode === 'fflf' || mode === 'audiosync' ? 'image' : undefined }}
       settings={[
         { kind: 'slider', key: 'width', label: 'Width', min: 256, max: 1536, step: 32, defaultValue: config.defaults.width },
         ...(config.sized

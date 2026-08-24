@@ -39,8 +39,6 @@ export const ClothesRemoverPage = () => {
         rows: 3,
       }}
       // Only FLUX.1-dev LoRAs - see the note above on why klein sliders do not
-      // belong here - and the source image is what the builder reads.
-      promptBuilder={{ loraPrefix: 'FLUX', imageKey: 'image' }}
       // Three slots because sliders are meant to be combined - chest and waist
       // and buttocks at once - and workflow_service stacks up to five.
       //

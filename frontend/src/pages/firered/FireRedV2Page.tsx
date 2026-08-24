@@ -34,7 +34,6 @@ export const FireRedV2Page = () => (
       negative: { placeholder: 'what to keep out' },
       rows: 4,
     }}
-    promptBuilder={{ kind: 'image' }}
     settings={[
       { kind: 'slider', key: 'lora_steps', label: 'Steps', min: 4, max: 20, defaultValue: 8 },
       { kind: 'seed', key: 'seed' },
