@@ -24,6 +24,15 @@ export type SourceModuleId =
 export interface FeddaModule {
   id: string;
   sourceModuleId: SourceModuleId;
+  /**
+   * Which card this sits under, when that differs from where it comes from.
+   *
+   * `sourceModuleId` decides both the family card and whether the tile is
+   * available, so a workflow that installs as its own module but belongs on an
+   * existing card had no way to say so - it became a card of its own with one
+   * workflow on it. This says it without touching availability.
+   */
+  family?: SourceModuleId;
   requiresAnyOf?: SourceModuleId[];
   label: string;
   description: string;
@@ -313,6 +322,7 @@ export const FEDDA_MODULES: FeddaModule[] = [
     // the family had a workflow, a page and a registration, and nothing
     // in the UI leading to any of it.
     sourceModuleId: 'z-image-advanced',
+    family: 'z-image-core',
     label: 'Z-Image Dual LoRA',
     description: 'Two-person LoRA image with selected-person refinement.',
     area: 'image',
@@ -385,6 +395,7 @@ export const FEDDA_MODULES: FeddaModule[] = [
   {
     id: 'flux-kontext-clothes-remover',
     sourceModuleId: 'flux-kontext-clothes-remover',
+    family: 'flux-klein',
     label: 'Clothes Remover',
     description: 'Take the clothes off a photo with FLUX.1-Kontext.',
     area: 'image',
@@ -573,6 +584,7 @@ export const FEDDA_MODULES: FeddaModule[] = [
   {
     id: 'z-image-inpaint',
     sourceModuleId: 'z-image-advanced',
+    family: 'z-image-core',
     label: 'Z-Image Inpaint',
     description: 'Auto-mask a face/body/clothes and regenerate it with Z-Image + your character LoRAs.',
     area: 'image',

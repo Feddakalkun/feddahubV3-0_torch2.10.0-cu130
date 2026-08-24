@@ -25,6 +25,11 @@ export const FAMILY_LABELS: Record<string, string> = {
   'flux-klein': 'FLUX',
   ideogram: 'Ideogram',
   'krea2-txt2img': 'KREA2',
+  hidream: 'HiDream',
+  'minimax-h3': 'MiniMax H3',
+  // Not a model family. Reel Machine is part of the app itself, and
+  // "Core Shell" on a card is an implementation detail on a user's screen.
+  'core-shell': 'Tools',
 };
 
 export const prettifyFamily = (id: string) =>
@@ -52,7 +57,9 @@ export function groupIntoFamilies(
   );
   const byId = new Map<string, FeddaModule[]>();
   for (const m of eligible) {
-    const key = m.sourceModuleId || m.id;
+    // `family` first: a module can install on its own and still belong on an
+    // existing card.
+    const key = m.family || m.sourceModuleId || m.id;
     const list = byId.get(key);
     if (list) list.push(m);
     else byId.set(key, [m]);
