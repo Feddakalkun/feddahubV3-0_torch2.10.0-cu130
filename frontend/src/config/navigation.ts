@@ -35,8 +35,7 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
         subitems: [
           { id: 'z-image-txt2img', label: 'Z-Image Txt2Img' },
           { id: 'z-image-dual-lora', label: 'Z-Image Dual LoRA' },
-          { id: 'flux-uncensored-txt2img', label: 'FLUX2-KLEIN' },
-          { id: 'klein-nsfw-v2', label: 'Klein Unfiltered v2' },
+          { id: 'flux2klein-txt2img-v2', label: 'FLUX2-KLEIN' },
           { id: 'klein-nsfw-edit', label: 'Klein Unfiltered Edit' },
           { id: 'klein-9b-faceswap', label: 'Klein Head Swap 9B' },
           { id: 'firered-v2', label: 'FireRed Edit 1.1' },

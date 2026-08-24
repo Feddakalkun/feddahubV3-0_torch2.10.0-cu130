@@ -1,7 +1,7 @@
 {
   "1205": {
     "inputs": {
-      "noise_seed": 1074742713512551
+      "noise_seed": 832078264020866
     },
     "class_type": "RandomNoise",
     "_meta": {
@@ -41,7 +41,7 @@
   },
   "1208": {
     "inputs": {
-      "value": 10
+      "value": 8
     },
     "class_type": "easy int",
     "_meta": {
@@ -50,8 +50,8 @@
   },
   "1210": {
     "inputs": {
-      "width": 1504,
-      "height": 1504,
+      "width": 1920,
+      "height": 1088,
       "aspect_ratio": "16:9",
       "direction": "Horizontal"
     },
@@ -72,7 +72,7 @@
   },
   "1212": {
     "inputs": {
-      "value": "A portrait photograph, natural light, realistic skin."
+      "value": ""
     },
     "class_type": "PrimitiveStringMultiline",
     "_meta": {
@@ -126,7 +126,7 @@
   },
   "1215": {
     "inputs": {
-      "text": "",
+      "text": "blurry, ugly, bad proportions, low quality, artifacts, glossy skin, oily skin, plastic skin, shiny skin, airbrushed, overexposed",
       "clip": [
         "1294",
         1
@@ -268,7 +268,7 @@
   },
   "1244": {
     "inputs": {
-      "text": "",
+      "text": "=== DOWNLOAD REPORT ===\nTotal files: 3\nSuccessful downloads: 0\nAlready existed: 0\nInterrupted: 0\nFailed: 0\nMax concurrent: 3\nSpeed limit: Unlimited\nResume enabled: True\nValidation enabled: False\nAuto-organize: False\n\nDetails:\n⏸ nsfwKlein.safetensors: Ready to download (auto_download disabled)\n⏸ qwen_3_8b_fp8mixed.safetensors: Ready to download (auto_download disabled)\n⏸ flux2-vae.safetensors: Ready to download (auto_download disabled)",
       "anything": [
         "1225",
         0
@@ -279,7 +279,7 @@
       "title": "Show Any"
     }
   },
-  "1294": {
+  "1245": {
     "inputs": {
       "lora_name": "Flux2-Klein-9B-consistency-V2.safetensors",
       "strength_model": 1,
@@ -291,6 +291,25 @@
       "clip": [
         "1217",
         0
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "1294": {
+    "inputs": {
+      "lora_name": "FLUX2KLEIN\\Emma-flux2-klein-base-9b.safetensors",
+      "strength_model": 1,
+      "strength_clip": 1,
+      "model": [
+        "1245",
+        0
+      ],
+      "clip": [
+        "1245",
+        1
       ]
     },
     "class_type": "LoraLoader",

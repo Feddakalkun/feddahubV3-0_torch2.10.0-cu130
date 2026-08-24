@@ -300,20 +300,18 @@
       "area": "image",
       "enabled": true,
       "tabs": [
-        "flux-uncensored-txt2img",
-        "klein-nsfw-v2",
+        "flux2klein-txt2img-v2",
         "klein-nsfw-edit",
         "klein-9b-faceswap",
         "flux-headswap",
         "klein-inpaint"
       ],
       "workflows": [
-        "klein-nsfw-v2",
+        "flux2klein-txt2img-v2",
         "klein-nsfw-edit",
         "klein-9b-faceswap",
         "flux-headswap",
-        "klein-inpaint",
-        "flux2klein-uncensored-txt2img"
+        "klein-inpaint"
       ],
       "custom_nodes": [
         "ComfyUI-Easy-Use",

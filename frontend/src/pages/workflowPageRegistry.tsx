@@ -28,11 +28,10 @@ import { LtxMultiFramePage } from './ltx/LtxMultiFramePage';
 import { FluxHeadSwapPage } from './fluxklein/FluxHeadSwapPage';
 import { KleinInpaintPage } from './fluxklein/KleinInpaintPage';
 import { HiDreamInpaint } from './hidream/HiDreamInpaint';
-import { KleinNsfwV2Page } from './fluxklein/KleinNsfwV2Page';
+import { FluxKleinTxt2ImgV2 } from './fluxklein/FluxKleinTxt2ImgV2';
 import { KleinNsfwEditPage } from './fluxklein/KleinNsfwEditPage';
 import { Klein9bFaceSwapPage } from './fluxklein/Klein9bFaceSwapPage';
 import { FireRedV2Page } from './firered/FireRedV2Page';
-import { FluxKleinUncensoredTxt2Img } from './fluxklein/FluxKleinUncensoredTxt2Img';
 import { LivePortraitPage } from './liveportrait/LivePortraitPage';
 import { Wan22VacePage } from './wan22/Wan22VacePage';
 import { LtxAi2vPage } from './ltx/LtxAi2vPage';
@@ -48,11 +47,10 @@ export const IMAGE_WORKFLOW_PAGES: Record<string, ComponentType> = {
   'krea2': Krea2Txt2Img,
   'z-image-txt2img': ZImageTxt2Img,
   'z-image-dual-lora': ZImageDualLoraPage,
-  'flux-uncensored-txt2img': FluxKleinUncensoredTxt2Img,
   'flux-headswap': FluxHeadSwapPage,
   'klein-inpaint': KleinInpaintPage,
   'hidream-inpaint': HiDreamInpaint,
-  'klein-nsfw-v2': KleinNsfwV2Page,
+  'flux2klein-txt2img-v2': FluxKleinTxt2ImgV2,
   'klein-nsfw-edit': KleinNsfwEditPage,
   'klein-9b-faceswap': Klein9bFaceSwapPage,
   'firered-v2': FireRedV2Page,

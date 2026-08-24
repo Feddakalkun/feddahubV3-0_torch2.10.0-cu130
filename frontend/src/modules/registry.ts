@@ -368,29 +368,18 @@ export const FEDDA_MODULES: FeddaModule[] = [
     // own, which is why this entry pointed at a source id nothing declared.
     sourceModuleId: 'flux-klein',
     label: 'Unfiltered',
-    description: 'FLUX2-KLEIN text-to-image on the unfiltered checkpoint.',
+    description: 'Text to image on the unfiltered Klein checkpoint, with a '
+      + 'consistency LoRA always in circuit and your own stacked after it.',
     area: 'image',
     pack: 'booster',
 
-    // Its own tab. It shared 'flux-txt2img' with the standard module, whose
-    // page hardcodes the standard workflow id - so this tile would have run the
-    // normal checkpoint while calling itself unfiltered.
-    tabs: ['flux-uncensored-txt2img'],
-    workflows: ['flux2klein-uncensored-txt2img'],
-    defaultTab: 'flux-uncensored-txt2img',
-    Icon: Sparkles,
-  },
-  {
-    id: 'klein-nsfw-v2',
-    sourceModuleId: 'flux-klein',
-    label: 'Unfiltered v2',
-    description: 'FLUX2-Klein text-to-image on the nsfwKlein checkpoint.',
-    area: 'image',
-    pack: 'booster',
-
-    tabs: ['klein-nsfw-v2'],
-    workflows: ['klein-nsfw-v2'],
-    defaultTab: 'klein-nsfw-v2',
+    // One tile where there were two. They ran the same three weights -
+    // nsfwKlein, qwen_3_8b_fp8mixed, flux2-vae - and differed only in whether
+    // a LoRA node existed, which was enough to send them to two different
+    // pages and make one look unrelated to the other.
+    tabs: ['flux2klein-txt2img-v2'],
+    workflows: ['flux2klein-txt2img-v2'],
+    defaultTab: 'flux2klein-txt2img-v2',
     Icon: Sparkles,
   },
   {
