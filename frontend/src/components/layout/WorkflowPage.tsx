@@ -244,10 +244,19 @@ export const WorkflowPage = ({
     `wf_${store}_loras`,
     {},
   );
+  // How many stack cards are on screen. The declared slots are the storage
+  // cells either way - this only decides how many of them are shown, so a saved
+  // pick in cell 3 brings its card back with it.
+  const [visibleLoraCount, setVisibleLoraCount] = useState(1);
   const [availableLoras, setAvailableLoras] = useState<Record<string, string[]>>({});
   // How many of each slot's list matched the workflow, so the picker knows
   // where to draw the line between "for this workflow" and everything else.
   const [loraMatchCounts, setLoraMatchCounts] = useState<Record<string, number>>({});
+
+  // Reopening a page that had three LoRAs saved must show three cards, not one
+  // card and two picks that are in the graph but nowhere on screen.
+  const filledLoras = loras.filter((slot) => loraPicks[slot.key]?.name?.trim()).length;
+  const shownLoras = Math.max(visibleLoraCount, filledLoras, 1);
   const [nodeOptions, setNodeOptions] = useState<Record<string, string[]>>({});
 
   // Selects read their options straight off ComfyUI's node schema, so the list
@@ -753,27 +762,53 @@ export const WorkflowPage = ({
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {basic.map(renderSetting)}
             </div>
-            {/* Declared slots stay slots: WAN's high- and low-noise passes
-                are positions that mean something, not a stack to add to. The
-                panel draws them the same way it draws a stack, so the two read
-                as one feature with a constraint. */}
+            {/* A page that sends its picks as one array has interchangeable
+                LoRAs, so it gets the stack. Pages that name their slots - WAN's
+                high- and low-noise passes, Z-Image's main and secondary - are
+                positions that mean something, and keep the fixed layout. */}
             {loras.length > 0 && (
               <div className="mt-4">
-                <LoraPanel
-                  accent="violet"
-                  familyLabel={family}
-                  slots={loras.map((slot) => ({
-                    key: slot.key,
-                    label: slot.label,
-                    options: availableLoras[slot.key] ?? [],
-                    matchCount: loraMatchCounts[slot.key] ?? 0,
-                    value: {
-                      name: loraPicks[slot.key]?.name ?? '',
-                      strength: loraPicks[slot.key]?.strength ?? 1,
-                    },
-                    onChange: (next) => setLoraPicks((prev) => ({ ...prev, [slot.key]: next })),
-                  }))}
-                />
+                {loraArrayKey ? (
+                  <LoraPanel
+                    accent="violet"
+                    familyLabel={family}
+                    stack={{
+                      entries: loras.slice(0, shownLoras).map((slot) => ({
+                        name: loraPicks[slot.key]?.name ?? '',
+                        strength: loraPicks[slot.key]?.strength ?? 1,
+                      })),
+                      options: availableLoras[loras[0].key] ?? [],
+                      matchCount: loraMatchCounts[loras[0].key] ?? 0,
+                      limit: loras.length,
+                      onChange: (next) => {
+                        setLoraPicks((prev) => {
+                          const merged = { ...prev };
+                          loras.forEach((slot, i) => {
+                            merged[slot.key] = next[i] ?? { name: '', strength: 1 };
+                          });
+                          return merged;
+                        });
+                        setVisibleLoraCount(Math.max(1, next.length));
+                      },
+                    }}
+                  />
+                ) : (
+                  <LoraPanel
+                    accent="violet"
+                    familyLabel={family}
+                    slots={loras.map((slot) => ({
+                      key: slot.key,
+                      label: slot.label,
+                      options: availableLoras[slot.key] ?? [],
+                      matchCount: loraMatchCounts[slot.key] ?? 0,
+                      value: {
+                        name: loraPicks[slot.key]?.name ?? '',
+                        strength: loraPicks[slot.key]?.strength ?? 1,
+                      },
+                      onChange: (next) => setLoraPicks((prev) => ({ ...prev, [slot.key]: next })),
+                    }))}
+                  />
+                )}
               </div>
             )}
             {showAdvanced && advanced.length > 0 && (
