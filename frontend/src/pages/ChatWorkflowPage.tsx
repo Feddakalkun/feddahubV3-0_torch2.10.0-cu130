@@ -103,6 +103,11 @@ interface Props {
 
 export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) => {
   const [fields, setFields] = useState<Field[]>([]);
+  // Which of the three opening requests are still out. Without these the header
+  // renders half its controls, then the rest, and the row moves under the
+  // cursor.
+  const [schemaLoading, setSchemaLoading] = useState(true);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [name, setName] = useState('');
   const [values, setValues] = useState<Record<string, string | number>>({});
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -190,6 +195,8 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
         if (!openId) setMessages([{ role: 'agent', text: openingLine(data.name, data.fields || []) }]);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (!cancelled) setSchemaLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -265,6 +272,7 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
         // nobody has chosen one - the stored preference is blank until then.
         if (d?.success) setVisionModel(d.effective_vision || d.vision_model || '');
       } catch { /* leave it on the backend's own default */ }
+      setModelsLoading(false);
     })();
   }, []);
 
@@ -828,9 +836,14 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
           {name || workflowId}
         </p>
         <span className="text-[10px] text-white/25">
-          {missing.length ? `${missing.length} still needed` : 'ready'}
+          {schemaLoading ? 'loading…' : missing.length ? `${missing.length} still needed` : 'ready'}
         </span>
-        {models.length > 0 && (
+        {modelsLoading && (
+          <span className="rounded-lg bg-white/[0.03] px-2 py-1.5 text-[10px] text-white/20">
+            Loading models…
+          </span>
+        )}
+        {!modelsLoading && models.length > 0 && (
           <select
             value={model}
             onChange={(e) => chooseModel(e.target.value)}
@@ -843,7 +856,7 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
             ))}
           </select>
         )}
-        {visionModel && (
+        {!modelsLoading && visionModel && (
           <a
             href="#/tab/ollama"
             title="Which local model reads an image you drop in - change it on the Ollama Models tab"
@@ -869,7 +882,17 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
 
       <div ref={scroller} className="custom-scrollbar flex-1 overflow-y-auto px-4 py-5">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
-          {messages.length === 0 && fileFields.length > 0 && (
+          {/* The opening line is written from the schema, so until that lands
+              the transcript is blank and the first thing the page says arrives
+              a second late. A bar the width of the line it becomes keeps the
+              space and shows something is coming. */}
+          {schemaLoading && messages.length === 0 && (
+            <div className="max-w-md animate-pulse rounded-2xl bg-white/[0.04] px-4 py-3">
+              <div className="h-2 w-3/4 rounded bg-white/[0.06]" />
+              <div className="mt-2 h-2 w-1/2 rounded bg-white/[0.05]" />
+            </div>
+          )}
+          {!schemaLoading && messages.length === 0 && fileFields.length > 0 && (
             <div className="flex flex-col items-center gap-3 rounded-2xl bg-white/[0.03] py-16">
               <ImagePlus className="h-7 w-7 text-white/25" />
               <span className="text-sm text-white/45">Drop or paste an image anywhere to start</span>
