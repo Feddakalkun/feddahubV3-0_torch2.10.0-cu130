@@ -46,14 +46,16 @@ export const ClothesRemoverPage = () => {
       //
       // `match` orders rather than filters, by design: a library filed by
       // character instead of by base model would otherwise lose every entry.
-      // "flux/" ranks this workflow's own folder first and leaves flux2klein/
-      // further down, which matters because those are a different architecture
-      // and load with dimension errors here.
+      //
+      // Both FLUX.1 folders, checked against the real paths: "flux/" catches
+      // this workflow's own FLUX/ and "flux1dev/" catches the body pack, and
+      // neither matches flux2klein/ - which is the point, since those are a
+      // different architecture and load with dimension errors here.
       loraArrayKey="loras"
       loras={[
-        { key: 'slider1', label: 'LoRA', match: ['flux/'] },
-        { key: 'slider2', label: 'LoRA 2', match: ['flux/'] },
-        { key: 'slider3', label: 'LoRA 3', match: ['flux/'] },
+        { key: 'slider1', label: 'LoRA', match: ['flux/', 'flux1dev/'] },
+        { key: 'slider2', label: 'LoRA 2', match: ['flux/', 'flux1dev/'] },
+        { key: 'slider3', label: 'LoRA 3', match: ['flux/', 'flux1dev/'] },
       ]}
       settings={[
         { kind: 'slider', key: 'steps', label: 'Steps', min: 4, max: 40, defaultValue: 20 },
