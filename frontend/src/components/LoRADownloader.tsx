@@ -57,9 +57,13 @@ const FAMILY_PACKS: Record<LoRAFamily, PackConfig[]> = {
     flux2klein:   [
         { key: 'flux2klein', title: 'FLUX2KLEIN Celeb Pack',  subtitle: 'pmczip/FLUX.2-klein-9B_Models' },
         { key: 'flux1dev',   title: 'FLUX.1-dev Celeb Pack',  subtitle: 'pmczip/FLUX.1-dev_Models' },
+        { key: 'flux1dev_body', title: 'FLUX.1 Body & Realism Pack', subtitle: 'hvai/flux - sliders, anatomy, skin texture' },
         { key: 'flux2klein_realism_engine', title: 'Realism Engine Klein', subtitle: 'civitai.red / Realism Engine Klein' },
     ],
-    flux1dev:     [{ key: 'flux1dev', title: 'FLUX.1-dev Celeb Pack', subtitle: 'pmczip/FLUX.1-dev_Models' }],
+    flux1dev:     [
+        { key: 'flux1dev', title: 'FLUX.1-dev Celeb Pack', subtitle: 'pmczip/FLUX.1-dev_Models' },
+        { key: 'flux1dev_body', title: 'FLUX.1 Body & Realism Pack', subtitle: 'hvai/flux - sliders, anatomy, skin texture' },
+    ],
     sd15:         [
         { key: 'sd15',         title: 'SD1.5 LoRA Pack',     subtitle: 'pmczip/SD1.5_LoRa_Models' },
         { key: 'sd15_lycoris', title: 'SD1.5 LyCORIS Pack',  subtitle: 'pmczip/SD1.5_LyCORIS_Models' },

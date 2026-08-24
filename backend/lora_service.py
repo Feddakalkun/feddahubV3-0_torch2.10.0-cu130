@@ -81,6 +81,15 @@ PACKS: Dict[str, Dict[str, str]] = {
         "dest":          "flux1dev",
         "img_subfolder": "Flux1D_Images",
     },
+    # Body and realism LoRAs for FLUX.1 - sliders, anatomy, skin texture - which
+    # flux1dev does not carry: that pack is entirely likeness LoRAs. Kept in a
+    # subfolder of its repository, which is what `src` is for.
+    "flux1dev_body": {
+        "hf_repo":       "hvai/flux",
+        "hf_type":       "dataset",
+        "src":           "lorra_flux",
+        "dest":          "flux1dev",
+    },
     "flux2klein_realism_engine": {
         "dest": "flux2klein",
         "static_items": [
@@ -265,9 +274,11 @@ class LoRAService:
                 return item.get("url", "")
 
         repo = pack["hf_repo"]
+        src = pack.get("src", "").strip("/")
+        path = f"{src}/{filename}" if src else filename
         if pack["hf_type"] == "dataset":
-            return f"https://huggingface.co/datasets/{repo}/resolve/main/{filename}"
-        return f"https://huggingface.co/{repo}/resolve/main/{filename}"
+            return f"https://huggingface.co/datasets/{repo}/resolve/main/{path}"
+        return f"https://huggingface.co/{repo}/resolve/main/{path}"
 
     # ─── Installed-LoRA previews ────────────────────────────────────────────
 
@@ -371,11 +382,14 @@ class LoRAService:
 
         repo     = pack["hf_repo"]
         hf_type  = pack["hf_type"]
+        src      = pack.get("src", "").strip("/")
         api_url  = (
             f"https://huggingface.co/api/datasets/{repo}/tree/main"
             if hf_type == "dataset"
             else f"https://huggingface.co/api/models/{repo}/tree/main"
         )
+        if src:
+            api_url = f"{api_url}/{src}"
 
         try:
             resp = requests.get(api_url, timeout=15, headers=self._hf_headers())
