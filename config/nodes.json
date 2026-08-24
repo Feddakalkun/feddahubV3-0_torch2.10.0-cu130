@@ -257,12 +257,6 @@
     "note": "MVAdapter nodes for multi-view adapter workflows"
   },
   {
-    "name": "ComfyUI-Diffusers",
-    "url": "https://github.com/Limitex/ComfyUI-Diffusers.git",
-    "folder": "ComfyUI-Diffusers",
-    "note": "Diffusers integration nodes for ComfyUI"
-  },
-  {
     "name": "ComfyUI_IPAdapter_plus",
     "url": "https://github.com/cubiq/ComfyUI_IPAdapter_plus.git",
     "folder": "ComfyUI_IPAdapter_plus",
@@ -333,12 +327,6 @@
     "url": "https://github.com/wildminder/ComfyUI-Chatterbox.git",
     "folder": "ComfyUI-Chatterbox",
     "note": "Chatterbox TTS nodes for expressive local voice generation"
-  },
-  {
-    "name": "ComfyUI-Index-TTS",
-    "url": "https://github.com/chenpipi0807/ComfyUI-Index-TTS.git",
-    "folder": "ComfyUI-Index-TTS",
-    "note": "Index-TTS nodes for high-quality voice cloning and emotional control"
   },
   {
     "name": "ComfyUI-FishAudioS2",

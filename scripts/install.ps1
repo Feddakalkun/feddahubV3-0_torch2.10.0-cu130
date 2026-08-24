@@ -722,7 +722,7 @@ Write-Header "STEP 4/7 - Custom Nodes (core set)"
 #
 # PowerShell 5.1's ConvertFrom-Json passes a JSON array onward as a single
 # object rather than as its elements, so @(Get-Content ... | ConvertFrom-Json)
-# yields a one-element array holding the whole list: $Node becomes all 62
+# yields a one-element array holding the whole list: $Node becomes every
 # entries at once and $Node.folder an Object[] that Join-Path refuses, which is
 # exactly how this failed. The previous code was saved from it by the
 # Where-Object it piped through - piping an array does enumerate - so removing
