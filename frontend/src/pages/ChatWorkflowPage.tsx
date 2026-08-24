@@ -128,10 +128,8 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
   const [loras, setLoras] = useState<string[]>([]);
   const [loraMatches, setLoraMatches] = useState(0);
   const [model, setModel] = useState('');
-  // The second model: it reads an image when one is dropped in. Ollama only -
-  // the caption path does not go through Venice, so listing Venice here would
-  // offer a choice that quietly does nothing.
-  const [visionModels, setVisionModels] = useState<string[]>([]);
+  // The second model: it reads an image when one is dropped in. Shown, not
+  // set - the Ollama Models tab owns this value.
   const [visionModel, setVisionModel] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
@@ -218,7 +216,6 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
         const EMBEDDING = /(^|[-_/])(embed|embedding|bge|gte|e5)([-_:]|$)/i;
         available = (Array.isArray(data.models) ? data.models : [])
           .filter((m: string) => !EMBEDDING.test(m));
-        setVisionModels(available);
         setModel(saved && available.includes(saved) ? saved : (data.text_model || ''));
       } catch { /* Venice may still be usable on its own */ }
 
@@ -264,7 +261,9 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
       try {
         const d = await (await fetch(
           `${BACKEND_API.BASE_URL}/api/settings/ollama-defaults`)).json();
-        if (d?.success) setVisionModel(d.vision_model || '');
+        // What will actually read the image, which is a real name even when
+        // nobody has chosen one - the stored preference is blank until then.
+        if (d?.success) setVisionModel(d.effective_vision || d.vision_model || '');
       } catch { /* leave it on the backend's own default */ }
     })();
   }, []);
@@ -291,17 +290,6 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
     try { localStorage.setItem(MODEL_KEY, n); } catch { /* private mode */ }
   };
 
-  // Stored by the backend rather than in localStorage, because this is the same
-  // setting the settings page writes - two places to set one thing is how they
-  // come to disagree.
-  const chooseVisionModel = (n: string) => {
-    setVisionModel(n);
-    void fetch(`${BACKEND_API.BASE_URL}/api/settings/ollama-defaults`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vision_model: n }),
-    }).catch(() => {});
-  };
 
   /**
    * Clear for a new chat.
@@ -855,18 +843,14 @@ export const ChatWorkflowPage = ({ workflowId, openId = null, onSaved }: Props) 
             ))}
           </select>
         )}
-        {visionModels.length > 0 && (
-          <select
-            value={visionModel}
-            onChange={(e) => chooseVisionModel(e.target.value)}
-            title="Which local model reads an image you drop in"
-            className="max-w-[180px] rounded-lg bg-white/[0.05] px-2 py-1.5 text-[10px] text-white/55 outline-none focus:bg-white/[0.08]"
+        {visionModel && (
+          <a
+            href="#/tab/ollama"
+            title="Which local model reads an image you drop in - change it on the Ollama Models tab"
+            className="max-w-[200px] truncate rounded-lg px-2 py-1.5 text-[10px] text-white/35 transition hover:bg-white/[0.06] hover:text-white/70"
           >
-            <option value="">Default vision model</option>
-            {visionModels.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+            Vision: {visionModel} &rsaquo;
+          </a>
         )}
         <div className="ml-auto flex items-center gap-1">
           <button
