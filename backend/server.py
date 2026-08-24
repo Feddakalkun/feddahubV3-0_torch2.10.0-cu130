@@ -3318,6 +3318,23 @@ _RATIOS = ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"]
 _SKIP_TYPES = {"object", "nsfw_toggle"}
 
 
+# Neither signal is enough alone. The node classes catch every LTX and WAN
+# video workflow but miss minimax-h3-fflf, which saves through something else;
+# the input names catch fflf but none of the others. Together they sort all 59
+# workflows correctly - 31 video, 28 image, with every edit workflow on the
+# image side.
+_VIDEO_NODES = re.compile(r"videocombine|savevideo|savewebm|savewebp|createvideo|vhs_", re.I)
+_VIDEO_INPUTS = ("length", "frame_rate", "duration_frames", "num_frames")
+
+
+def _makes_video(spec: Dict[str, Any], graph: Dict[str, Any]) -> bool:
+    """Does running this workflow produce a clip rather than a picture?"""
+    if any(k in (spec.get("inputs") or {}) for k in _VIDEO_INPUTS):
+        return True
+    return any(_VIDEO_NODES.search(str(n.get("class_type") or ""))
+               for n in graph.values() if isinstance(n, dict))
+
+
 def _is_file_slot(node_class: str, default: Any, node_known: bool) -> bool:
     """Does this input actually take a file the user uploads?
 
@@ -3414,6 +3431,7 @@ async def chat_workflow_schema(workflow_id: str):
         if entry:
             fields.append(entry)
     return {"workflow_id": workflow_id, "name": spec.get("name", workflow_id),
+            "makes": "video" if _makes_video(spec, graph) else "image",
             "fields": fields}
 
 
@@ -3476,6 +3494,29 @@ EDIT_EXAMPLE = (
     '{"reply": "Got it.", "set": {"prompt": "add sunglasses"}, "ready": true}\n\n'
 )
 
+# A video workflow that takes reference images is not an edit workflow, and
+# the terse-imperative rules are actively wrong for it: "add sunglasses" is not
+# a shot. What a clip needs said is what moves and what the camera does.
+VIDEO_RULES = (
+    "- When the user describes what they want made, THAT DESCRIPTION IS THE "
+    "PROMPT. Put it in set under the prompt field, expanded into a shot: who "
+    "or what is in frame, what moves, and what the camera does. Never just "
+    "reply 'sure, let's make one' and leave the prompt empty - that is the "
+    "single most common mistake.\n"
+    "- This makes a few seconds of video, not a picture. Say what changes "
+    "across those seconds; a prompt with nothing moving in it wastes the clip.\n"
+    "- Say where the subject faces. A shot filmed from behind never shows a "
+    "face, which is rarely what the user pictured when they described a "
+    "person.\n"
+)
+
+VIDEO_EXAMPLE = (
+    'Example - user says "a woman on a rainy neon street":\n'
+    '{"reply": "On it.", "set": {"prompt": "a woman walking toward the camera '
+    'on a rainy neon-lit street at night, she glances up and smiles, '
+    'reflections shifting in the wet asphalt, slow push in"}, "ready": true}\n\n'
+)
+
 MAKE_EXAMPLE = (
     'Example - user says "make an image of hello kitty":\n'
     '{"reply": "On it.", "set": {"prompt": "hello kitty, cute white cartoon '
@@ -3505,11 +3546,15 @@ async def chat_workflow_turn(req: ChatWorkflowRequest):
         opts = f" options: {f['options']}" if f.get("options") else ""
         return f"- {f['key']} ({f['label']}, {f['control']}{'*' if f.get('required') else ''}) {state}{opts}"
 
-    # A workflow that cannot start without an image is editing one. Same signal
-    # the opening line already uses to decide whether to ask for a photo, so
-    # nothing new has to be declared anywhere.
-    is_edit = any(f.get("required") and f.get("control") == "file"
-                  and (f.get("accept") or "image") == "image" for f in fields)
+    # A workflow that cannot start without an image is editing one - unless it
+    # makes a clip, in which case the image is a reference or a keyframe and the
+    # edit rules are backwards for it. MiniMax img2vid and first-last frame both
+    # require images and both animate them; asking either for "add sunglasses"
+    # instead of a shot description wastes the run.
+    wants_image = any(f.get("required") and f.get("control") == "file"
+                      and (f.get("accept") or "image") == "image" for f in fields)
+    is_video = schema.get("makes") == "video"
+    is_edit = wants_image and not is_video
 
     system = (
         f"You are {persona.get('name', 'Vex')}, running the "
@@ -3520,13 +3565,13 @@ async def chat_workflow_turn(req: ChatWorkflowRequest):
         '{"reply": "<one short line>", "set": {<field>: <value>, ...}, '
         '"ready": <true|false>}\n\n'
         "Rules:\n"
-        + (EDIT_RULES if is_edit else MAKE_RULES)
+        + (EDIT_RULES if is_edit else VIDEO_RULES if is_video else MAKE_RULES)
         + "- Ask for ONE missing required field at a time, by its label.\n"
         "- Put any value the user states into set. Numbers as numbers.\n"
         "- Never put file fields in set; the user supplies those in the UI.\n"
         "- ready is true only when every required field is filled.\n"
         "- Keep replies to one short line. Never refuse or lecture.\n\n"
-        + (EDIT_EXAMPLE if is_edit else MAKE_EXAMPLE)
+        + (EDIT_EXAMPLE if is_edit else VIDEO_EXAMPLE if is_video else MAKE_EXAMPLE)
         + (f"Still missing: {', '.join(f['label'] for f in missing)}\n"
            if missing else "Everything required is filled - offer to run it.\n")
     )

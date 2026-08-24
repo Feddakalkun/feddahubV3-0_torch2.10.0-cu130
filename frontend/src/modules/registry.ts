@@ -92,6 +92,12 @@ export const AGENT_ENABLED: string[] = [
   // timeline, and a conversation is a worse way to build one than the page
   // already built for it.
   'minimax-h3-txt2vid',
+  // Both take images and both animate them, which is why the agent had to stop
+  // reading "requires an image" as "is an edit workflow" before either could be
+  // useful: img2vid is two reference images into MiniMaxH3ReferenceToVideo, and
+  // first-last is two keyframes the clip travels between.
+  'minimax-h3-img2vid',
+  'minimax-h3-fflf',
 ];
 
 export const EDITORS_CHOICE: string[] = [
