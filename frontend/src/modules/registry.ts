@@ -368,8 +368,7 @@ export const FEDDA_MODULES: FeddaModule[] = [
     // own, which is why this entry pointed at a source id nothing declared.
     sourceModuleId: 'flux-klein',
     label: 'Unfiltered',
-    description: 'Text to image on the unfiltered Klein checkpoint, with a '
-      + 'consistency LoRA always in circuit and your own stacked after it.',
+    description: 'Text to image on the unfiltered Klein checkpoint.',
     area: 'image',
     pack: 'booster',
 

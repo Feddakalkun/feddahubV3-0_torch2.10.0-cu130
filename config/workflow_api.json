@@ -4243,7 +4243,7 @@
   "flux2klein-txt2img-v2": {
     "name": "FLUX2-KLEIN Unfiltered v2",
     "filename": "fluxklein/FLUX2KLEIN-TXT2IMG-V2.json",
-    "description": "FLUX.2-klein unfiltered text-to-image on nsfwKlein, with the Flux2-Klein-9B consistency LoRA always in circuit and the user LoRA stack chained after it. Replaces the separate v1 and v2 workflows, which loaded the same three weights as each other.",
+    "description": "FLUX.2-klein unfiltered text-to-image on nsfwKlein. Replaces the separate v1 and v2 workflows, which loaded the same three weights as each other.",
     "inputs": {
       "prompt": {
         "node_id": "1212",

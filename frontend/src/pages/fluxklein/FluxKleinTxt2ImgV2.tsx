@@ -10,11 +10,13 @@ import { Txt2ImgPage } from '../zimage/ZImageTxt2Img';
  * alone decided which page each got, this rich one or the generic slider page,
  * which is why the two tabs looked unrelated.
  *
- * The merged graph settles it by keeping the Flux2-Klein-9B consistency LoRA on
- * a node of its own, always in circuit, with the user's stack chained after it.
+ * The merged graph carries a LoRA slot and nothing baked into it. A consistency
+ * LoRA was wired in always-on first, then dropped: nothing had shown it earned
+ * the place, and a LoRA that is always applied is one whose effect can never be
+ * measured.
  *
- * Same controls as the standard FLUX page: the graph differs in the checkpoint
- * and that baked LoRA, not in anything the user sets.
+ * Same controls as the standard FLUX page: the graph differs in the checkpoint,
+ * not in anything the user sets.
  */
 export const FluxKleinTxt2ImgV2 = () => {
   return (
