@@ -41,6 +41,20 @@ export const ClothesRemoverPage = () => {
       // Only FLUX.1-dev LoRAs - see the note above on why klein sliders do not
       // belong here - and the source image is what the builder reads.
       promptBuilder={{ loraPrefix: 'FLUX', imageKey: 'image' }}
+      // Three slots because sliders are meant to be combined - chest and waist
+      // and buttocks at once - and workflow_service stacks up to five.
+      //
+      // `match` orders rather than filters, by design: a library filed by
+      // character instead of by base model would otherwise lose every entry.
+      // "flux/" ranks this workflow's own folder first and leaves flux2klein/
+      // further down, which matters because those are a different architecture
+      // and load with dimension errors here.
+      loraArrayKey="loras"
+      loras={[
+        { key: 'slider1', label: 'LoRA', match: ['flux/'] },
+        { key: 'slider2', label: 'LoRA 2', match: ['flux/'] },
+        { key: 'slider3', label: 'LoRA 3', match: ['flux/'] },
+      ]}
       settings={[
         { kind: 'slider', key: 'steps', label: 'Steps', min: 4, max: 40, defaultValue: 20 },
         { kind: 'slider', key: 'guidance', label: 'Guidance', min: 1, max: 6, step: 0.1, defaultValue: 2.5 },
