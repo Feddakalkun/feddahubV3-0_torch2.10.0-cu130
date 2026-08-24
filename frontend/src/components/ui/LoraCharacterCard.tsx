@@ -3,6 +3,12 @@ import { ChevronDown, Search, Trash2, UserRound, X } from 'lucide-react';
 
 interface LoraCharacterCardProps {
   index: number;
+  /** Named slots show this instead of the number: "1" says nothing where
+   *  "High-noise" is the entire distinction between two slots. */
+  label?: string;
+  /** How many of `options` matched this slot; they are listed first, under
+   *  their own heading, with the rest below rather than hidden. */
+  matchCount?: number;
   value: string;
   strength: number;
   options: string[];
@@ -38,6 +44,8 @@ function toLabel(path: string) {
 
 export const LoraCharacterCard = ({
   index,
+  label,
+  matchCount = 0,
   value,
   strength,
   options,
@@ -71,15 +79,20 @@ export const LoraCharacterCard = ({
             </div>
           )}
           <div className="absolute left-1.5 top-1.5 rounded bg-black/65 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white/70">
-            LoRA {index + 1}
+            {label ?? `LoRA ${index + 1}`}
           </div>
         </div>
       )}
 
       <div className="flex items-center gap-2">
         {compact && (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-black/30 text-[9px] font-black text-white/35">
-            {index + 1}
+          <div
+            title={label}
+            className={`flex h-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-black/30 text-[9px] font-black text-white/35 ${
+              label ? 'w-auto px-2 uppercase tracking-wider' : 'w-8'
+            }`}
+          >
+            {label ?? index + 1}
           </div>
         )}
         <button
@@ -122,17 +135,38 @@ export const LoraCharacterCard = ({
             >
               None (use workflow default)
             </button>
-            {filtered.map((item) => (
-              <button
-                key={item}
-                onClick={() => { onChange(item); setOpen(false); }}
-                className={`w-full rounded-lg px-2.5 py-2 text-left text-[11px] transition-colors ${
-                  value === item ? 'bg-white/[0.08] text-white' : 'text-white/50 hover:bg-white/[0.05] hover:text-white/85'
-                }`}
-              >
-                {toLabel(item)}
-              </button>
-            ))}
+            {(() => {
+              // Two lists while browsing, one while searching: once somebody has
+              // typed they are after a name rather than a category, and the
+              // split is in the way. Matching ones still come first.
+              const hit = matchCount > 0 ? filtered.filter((o) => options.indexOf(o) < matchCount) : [];
+              const rest = matchCount > 0 ? filtered.filter((o) => options.indexOf(o) >= matchCount) : filtered;
+              const row = (item: string) => (
+                <button
+                  key={item}
+                  onClick={() => { onChange(item); setOpen(false); }}
+                  className={`w-full rounded-lg px-2.5 py-2 text-left text-[11px] transition-colors ${
+                    value === item ? 'bg-white/[0.08] text-white' : 'text-white/50 hover:bg-white/[0.05] hover:text-white/85'
+                  }`}
+                >
+                  {toLabel(item)}
+                </button>
+              );
+              const heading = (text: string) => (
+                <div className="px-2.5 pt-1 text-[8px] font-black uppercase tracking-[0.2em] text-white/20">
+                  {text}
+                </div>
+              );
+              if (!hit.length) return rest.map(row);
+              return (
+                <>
+                  {heading('For this workflow')}
+                  {hit.map(row)}
+                  {rest.length > 0 && heading(`Everything else (${rest.length})`)}
+                  {rest.map(row)}
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

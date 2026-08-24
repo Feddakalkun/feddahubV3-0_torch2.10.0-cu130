@@ -14,7 +14,7 @@ import { InfoTip } from '../ui/InfoTip';
 import { PromptAssistant } from '../ui/PromptAssistant';
 import { GenerateButton, SeedField, SliderField, UploadSlot } from '../ui/WorkflowControls';
 import { cn } from '../../lib/styles';
-import { LoraSelector } from '../ui/LoraSelector';
+import { LoraPanel } from '../workflows/LoraPanel';
 import { comfyService } from '../../services/comfyService';
 
 /**
@@ -753,27 +753,27 @@ export const WorkflowPage = ({
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {basic.map(renderSetting)}
             </div>
+            {/* Declared slots stay slots: WAN's high- and low-noise passes
+                are positions that mean something, not a stack to add to. The
+                panel draws them the same way it draws a stack, so the two read
+                as one feature with a constraint. */}
             {loras.length > 0 && (
-              <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                {loras.map((slot) => (
-                  <LoraSelector
-                    key={slot.key}
-                    label={slot.label}
-                    value={loraPicks[slot.key]?.name ?? ''}
-                    onChange={(name) => setLoraPicks((prev) => ({
-                      ...prev,
-                      [slot.key]: { name, strength: prev[slot.key]?.strength ?? 1 },
-                    }))}
-                    strength={loraPicks[slot.key]?.strength ?? 1}
-                    onStrengthChange={(strength) => setLoraPicks((prev) => ({
-                      ...prev,
-                      [slot.key]: { name: prev[slot.key]?.name ?? '', strength },
-                    }))}
-                    options={availableLoras[slot.key] ?? []}
-                    matchCount={loraMatchCounts[slot.key] ?? 0}
-                    accent="violet"
-                  />
-                ))}
+              <div className="mt-4">
+                <LoraPanel
+                  accent="violet"
+                  familyLabel={family}
+                  slots={loras.map((slot) => ({
+                    key: slot.key,
+                    label: slot.label,
+                    options: availableLoras[slot.key] ?? [],
+                    matchCount: loraMatchCounts[slot.key] ?? 0,
+                    value: {
+                      name: loraPicks[slot.key]?.name ?? '',
+                      strength: loraPicks[slot.key]?.strength ?? 1,
+                    },
+                    onChange: (next) => setLoraPicks((prev) => ({ ...prev, [slot.key]: next })),
+                  }))}
+                />
               </div>
             )}
             {showAdvanced && advanced.length > 0 && (

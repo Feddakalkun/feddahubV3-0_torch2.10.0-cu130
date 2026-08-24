@@ -1,10 +1,10 @@
 import { useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
-import { Brush, ChevronDown, Loader2, Maximize2, Plus, RefreshCw, Sparkles, Upload, X } from 'lucide-react';
+import { Brush, ChevronDown, Loader2, Maximize2, RefreshCw, Sparkles, Upload, X } from 'lucide-react';
 import { PromptAgentBox } from './PromptAgentBox';
 import { PromptBuilderPanel } from './PromptBuilderPanel';
 import { MaskBrush } from './MaskBrush';
 import { PromptAssistant, type PromptContext } from '../ui/PromptAssistant';
-import { LoraCharacterCard } from '../ui/LoraCharacterCard';
+import { LoraPanel } from './LoraPanel';
 import { BACKEND_API } from '../../config/api';
 import { LiveSamplingPreview } from './LiveSamplingPreview';
 
@@ -285,14 +285,6 @@ export function SimpleImageCockpit({
     groups[group] = [...(groups[group] || []), preset];
     return groups;
   }, {});
-
-  const updateLora = (index: number, patch: Partial<SimpleImageLoraEntry>) => {
-    setLoraEntries((prev) => {
-      const source = prev.length > 0 ? [...prev] : [{ name: '', strength: 1.0 }];
-      source[index] = { ...source[index], ...patch };
-      return source;
-    });
-  };
 
   const handleFile = (file?: File | null) => {
     if (!file || !file.type.startsWith('image/')) return;
@@ -688,54 +680,17 @@ export function SimpleImageCockpit({
           )}
 
           {enableLoras && (
-            <div className="cockpit-panel cockpit-lora-panel">
-              <div className="cockpit-panel-head">
-                <span>Characters / LoRAs</span>
-                <span>{loraEntries.length || 1}/{loraLimit}</span>
-              </div>
-
-              {availableLoras.length === 0 && (
-                <p className="cockpit-muted">
-                  No compatible {familyLabel} LoRAs are installed yet. You can generate without LoRAs and add character packs later.
-                </p>
-              )}
-
-              <div className="cockpit-lora-grid">
-                {visibleLoras.map((entry, index) => (
-                  <LoraCharacterCard
-                    key={`simple-image-lora-${index}`}
-                    index={index}
-                    value={entry.name}
-                    strength={entry.strength}
-                    options={availableLoras}
-                    previewUrl={getLoraPreview(entry.name)}
-                    accent={accent}
-                    compact
-                    onChange={(name) => updateLora(index, { name })}
-                    onStrengthChange={(strength) => updateLora(index, { strength })}
-                    onRemove={index > 0 ? () => setLoraEntries((prev) => prev.filter((_, i) => i !== index)) : undefined}
-                  />
-                ))}
-              </div>
-
-              {loraEntries.some((entry) => entry.name && entry.name.trim()) && (
-                <div className="rounded-lg border border-white/[0.06] bg-black/25 px-2.5 py-2 text-[10px] font-semibold text-white/45">
-                  Active: {loraEntries
-                    .filter((entry) => entry.name && entry.name.trim())
-                    .map((entry) => `${entry.name.split(/[\\/]/).pop()} @ ${entry.strength.toFixed(2)}`)
-                    .join(', ')}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setLoraEntries((prev) => (prev.length >= loraLimit ? prev : [...prev, { name: '', strength: 1.0 }]))}
-                disabled={loraEntries.length >= loraLimit}
-                className="cockpit-add-lora"
-              >
-                <Plus className="h-3 w-3" /> Add LoRA
-              </button>
-            </div>
+            <LoraPanel
+              accent={accent}
+              familyLabel={familyLabel}
+              getPreview={getLoraPreview}
+              stack={{
+                entries: visibleLoras,
+                onChange: (next) => setLoraEntries(next),
+                options: availableLoras,
+                limit: loraLimit,
+              }}
+            />
           )}
 
           <div className="cockpit-control-grid">
