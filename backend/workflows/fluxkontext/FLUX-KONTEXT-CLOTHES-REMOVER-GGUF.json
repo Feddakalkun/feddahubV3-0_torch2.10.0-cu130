@@ -1,0 +1,260 @@
+{
+  "1": {
+    "inputs": {
+      "filename_prefix": "IMAGE/CLOTHES-REMOVER/0",
+      "images": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "2": {
+    "inputs": {
+      "lora_name": "FLUX\\flx-cl-remover.safetensors",
+      "strength_model": 1,
+      "strength_clip": 1,
+      "model": [
+        "8",
+        0
+      ],
+      "clip": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "guidance": 2.5,
+      "conditioning": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "FluxGuidance",
+    "_meta": {
+      "title": "FluxGuidance"
+    }
+  },
+  "4": {
+    "inputs": {
+      "seed": 3895922563881,
+      "steps": 20,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": [
+        "20",
+        0
+      ],
+      "positive": [
+        "11",
+        0
+      ],
+      "negative": [
+        "9",
+        0
+      ],
+      "latent_image": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "5": {
+    "inputs": {
+      "samples": [
+        "4",
+        0
+      ],
+      "vae": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "6": {
+    "inputs": {
+      "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
+      "clip_name2": "clip_l-for-gguf.safetensors",
+      "type": "flux",
+      "device": "default"
+    },
+    "class_type": "DualCLIPLoader",
+    "_meta": {
+      "title": "Load CLIP (Dual)"
+    }
+  },
+  "7": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "8": {
+    "inputs": {
+      "unet_name": "flux1-kontext-dev-Q8_0.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "9": {
+    "inputs": {
+      "conditioning": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "Conditioning Zero Out"
+    }
+  },
+  "11": {
+    "inputs": {
+      "conditioning": [
+        "3",
+        0
+      ],
+      "latent": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "Set Reference Latent"
+    }
+  },
+  "12": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "IMAGE SIZE"
+    }
+  },
+  "13": {
+    "inputs": {
+      "text": "remove clothes, make the woman naked.",
+      "clip": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "14": {
+    "inputs": {
+      "pixels": [
+        "15",
+        0
+      ],
+      "vae": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "15": {
+    "inputs": {
+      "image": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "FluxKontextImageScale",
+    "_meta": {
+      "title": "FluxKontextImageScale"
+    }
+  },
+  "17": {
+    "inputs": {
+      "image": "VeniceAI_JLCPoJFkG1mwur_2.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "20": {
+    "inputs": {
+      "lora_name": "FLUX\\flx-cl-remover.safetensors",
+      "strength_model": 1,
+      "strength_clip": 1,
+      "model": [
+        "2",
+        0
+      ],
+      "clip": [
+        "2",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA (Model and CLIP)"
+    }
+  },
+  "30": {
+    "inputs": {
+      "download_links": "https://huggingface.co/QuantStack/FLUX.1-Kontext-dev-GGUF/resolve/main/flux1-kontext-dev-Q8_0.gguf unet\nhttps://huggingface.co/f5aiteam/CLIP/resolve/main/t5xxl_fp8_e4m3fn.safetensors clip\nhttps://huggingface.co/f5aiteam/CLIP/resolve/main/clip_l-for-gguf.safetensors clip\nhttps://huggingface.co/Comfy-Org/Lumina_Image_2.0_Repackaged/resolve/main/split_files/vae/ae.safetensors vae\nhttps://huggingface.co/comfyuistudio/flx-cl-remover/resolve/main/flx-cl-remover.safetensors loras/FLUX",
+      "auto_download": true,
+      "max_concurrent_downloads": 3,
+      "max_download_speed_mbps": 0,
+      "enable_resume": true,
+      "validate_files": false,
+      "enable_notifications": true,
+      "auto_organize": false,
+      "hf_token": ""
+    },
+    "class_type": "HuggingFaceDownloader",
+    "_meta": {
+      "title": "HuggingFace Model Downloader Pro"
+    }
+  },
+  "31": {
+    "inputs": {
+      "anything": [
+        "30",
+        0
+      ]
+    },
+    "class_type": "easy showAnything",
+    "_meta": {
+      "title": "Show Any"
+    }
+  }
+}

@@ -18,7 +18,8 @@ export type SourceModuleId =
   | 'hidream'
   | 'flux-klein-uncensored'
   | 'krea2-txt2img'
-  | 'ideogram';
+  | 'ideogram'
+  | 'flux-kontext-clothes-remover';
 
 export interface FeddaModule {
   id: string;
@@ -379,6 +380,19 @@ export const FEDDA_MODULES: FeddaModule[] = [
     tabs: ['flux2klein-txt2img-v2'],
     workflows: ['flux2klein-txt2img-v2'],
     defaultTab: 'flux2klein-txt2img-v2',
+    Icon: Sparkles,
+  },
+  {
+    id: 'flux-kontext-clothes-remover',
+    sourceModuleId: 'flux-kontext-clothes-remover',
+    label: 'Clothes Remover',
+    description: 'Take the clothes off a photo with FLUX.1-Kontext.',
+    area: 'image',
+    pack: 'booster',
+
+    tabs: ['flux-kontext-clothes-remover'],
+    workflows: ['flux-kontext-clothes-remover', 'flux-kontext-clothes-remover-gguf'],
+    defaultTab: 'flux-kontext-clothes-remover',
     Icon: Sparkles,
   },
   {

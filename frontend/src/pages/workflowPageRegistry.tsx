@@ -29,6 +29,7 @@ import { FluxHeadSwapPage } from './fluxklein/FluxHeadSwapPage';
 import { KleinInpaintPage } from './fluxklein/KleinInpaintPage';
 import { HiDreamInpaint } from './hidream/HiDreamInpaint';
 import { FluxKleinTxt2ImgV2 } from './fluxklein/FluxKleinTxt2ImgV2';
+import { ClothesRemoverPage } from './fluxkontext/ClothesRemoverPage';
 import { KleinNsfwEditPage } from './fluxklein/KleinNsfwEditPage';
 import { Klein9bFaceSwapPage } from './fluxklein/Klein9bFaceSwapPage';
 import { FireRedV2Page } from './firered/FireRedV2Page';
@@ -51,6 +52,7 @@ export const IMAGE_WORKFLOW_PAGES: Record<string, ComponentType> = {
   'klein-inpaint': KleinInpaintPage,
   'hidream-inpaint': HiDreamInpaint,
   'flux2klein-txt2img-v2': FluxKleinTxt2ImgV2,
+  'flux-kontext-clothes-remover': ClothesRemoverPage,
   'klein-nsfw-edit': KleinNsfwEditPage,
   'klein-9b-faceswap': Klein9bFaceSwapPage,
   'firered-v2': FireRedV2Page,

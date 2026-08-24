@@ -458,6 +458,24 @@
         "minimax-h3-audiosync",
         "minimax-h3-ref8"
       ]
+    },
+    {
+      "id": "flux-kontext-clothes-remover",
+      "label": "FLUX Kontext Clothes Remover",
+      "pack": "booster",
+      "area": "image",
+      "enabled": true,
+      "tabs": [
+        "flux-kontext-clothes-remover"
+      ],
+      "workflows": [
+        "flux-kontext-clothes-remover",
+        "flux-kontext-clothes-remover-gguf"
+      ],
+      "custom_nodes": [
+        "ComfyUI-Easy-Use",
+        "ComfyUI-GGUF"
+      ]
     }
   ]
 }

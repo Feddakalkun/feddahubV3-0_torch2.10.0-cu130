@@ -4305,5 +4305,173 @@
         "label": "LoRAs"
       }
     }
+  },
+  "flux-kontext-clothes-remover": {
+    "name": "FLUX Kontext Clothes Remover",
+    "filename": "fluxkontext/FLUX-KONTEXT-CLOTHES-REMOVER.json",
+    "description": "FLUX.1-Kontext image edit on the flx-cl-remover LoRA - fp8 checkpoint. LoRAs stack after the remover.",
+    "inputs": {
+      "image": {
+        "node_id": "17",
+        "input_key": "image",
+        "type": "string",
+        "label": "Source Image"
+      },
+      "prompt": {
+        "node_id": "13",
+        "input_key": "text",
+        "type": "string",
+        "label": "Prompt"
+      },
+      "width": {
+        "node_id": "12",
+        "input_key": "width",
+        "type": "number",
+        "label": "Width"
+      },
+      "height": {
+        "node_id": "12",
+        "input_key": "height",
+        "type": "number",
+        "label": "Height"
+      },
+      "seed": {
+        "node_id": "4",
+        "input_key": "seed",
+        "type": "number",
+        "label": "Seed"
+      },
+      "steps": {
+        "node_id": "4",
+        "input_key": "steps",
+        "type": "number",
+        "label": "Steps"
+      },
+      "cfg": {
+        "node_id": "4",
+        "input_key": "cfg",
+        "type": "number",
+        "label": "CFG Scale"
+      },
+      "sampler_name": {
+        "node_id": "4",
+        "input_key": "sampler_name",
+        "type": "string",
+        "label": "Sampler"
+      },
+      "scheduler": {
+        "node_id": "4",
+        "input_key": "scheduler",
+        "type": "string",
+        "label": "Scheduler"
+      },
+      "denoise": {
+        "node_id": "4",
+        "input_key": "denoise",
+        "type": "number",
+        "label": "Denoise"
+      },
+      "guidance": {
+        "node_id": "3",
+        "input_key": "guidance",
+        "type": "number",
+        "label": "Guidance"
+      },
+      "remover_strength": {
+        "node_id": "2",
+        "input_key": "strength_model",
+        "type": "number",
+        "label": "Remover Strength"
+      },
+      "loras": {
+        "node_id": "20",
+        "type": "loras",
+        "label": "LoRAs"
+      }
+    }
+  },
+  "flux-kontext-clothes-remover-gguf": {
+    "name": "FLUX Kontext Clothes Remover (GGUF)",
+    "filename": "fluxkontext/FLUX-KONTEXT-CLOTHES-REMOVER-GGUF.json",
+    "description": "FLUX.1-Kontext image edit on the flx-cl-remover LoRA - Q8_0 GGUF unet, lighter on VRAM. LoRAs stack after the remover.",
+    "inputs": {
+      "image": {
+        "node_id": "17",
+        "input_key": "image",
+        "type": "string",
+        "label": "Source Image"
+      },
+      "prompt": {
+        "node_id": "13",
+        "input_key": "text",
+        "type": "string",
+        "label": "Prompt"
+      },
+      "width": {
+        "node_id": "12",
+        "input_key": "width",
+        "type": "number",
+        "label": "Width"
+      },
+      "height": {
+        "node_id": "12",
+        "input_key": "height",
+        "type": "number",
+        "label": "Height"
+      },
+      "seed": {
+        "node_id": "4",
+        "input_key": "seed",
+        "type": "number",
+        "label": "Seed"
+      },
+      "steps": {
+        "node_id": "4",
+        "input_key": "steps",
+        "type": "number",
+        "label": "Steps"
+      },
+      "cfg": {
+        "node_id": "4",
+        "input_key": "cfg",
+        "type": "number",
+        "label": "CFG Scale"
+      },
+      "sampler_name": {
+        "node_id": "4",
+        "input_key": "sampler_name",
+        "type": "string",
+        "label": "Sampler"
+      },
+      "scheduler": {
+        "node_id": "4",
+        "input_key": "scheduler",
+        "type": "string",
+        "label": "Scheduler"
+      },
+      "denoise": {
+        "node_id": "4",
+        "input_key": "denoise",
+        "type": "number",
+        "label": "Denoise"
+      },
+      "guidance": {
+        "node_id": "3",
+        "input_key": "guidance",
+        "type": "number",
+        "label": "Guidance"
+      },
+      "remover_strength": {
+        "node_id": "2",
+        "input_key": "strength_model",
+        "type": "number",
+        "label": "Remover Strength"
+      },
+      "loras": {
+        "node_id": "20",
+        "type": "loras",
+        "label": "LoRAs"
+      }
+    }
   }
 }

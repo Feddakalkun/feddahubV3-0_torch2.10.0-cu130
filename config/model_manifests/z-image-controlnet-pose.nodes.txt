@@ -4,3 +4,5 @@
 comfyui_controlnet_aux https://github.com/Fannovel16/comfyui_controlnet_aux.git
 ComfyUI-Impact-Pack https://github.com/ltdrdata/ComfyUI-Impact-Pack.git
 ComfyUI-Impact-Subpack https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git
+ComfyUI-Florence2 https://github.com/kijai/ComfyUI-Florence2.git
+ComfyUI-segment-anything-2 https://github.com/kijai/ComfyUI-segment-anything-2.git
