@@ -90,7 +90,6 @@ https://huggingface.co/comfyuistudio/orins/resolve/main/CumShot-Low.safetensors 
 https://huggingface.co/comfyuistudio/orins/resolve/main/Oral-Ins-High.safetensors loras
 https://huggingface.co/comfyuistudio/orins/resolve/main/Oral-Ins-Low.safetensors loras
 https://huggingface.co/comfyuistudio/realism-sdxl/resolve/main/realism-sdxl.safetensors checkpoints
-https://huggingface.co/comfyuistudio/wan2.1_loras/resolve/main/SECRET_SAUCE_WAN2.1_14B_fp8.safetensors loras
 https://huggingface.co/comfyuistudio/wan2.1_loras/resolve/main/SECRET_SAUCE_WAN2.1_14B_fp8.safetensors loras/wan
 https://huggingface.co/comfyuistudio/wan22nsfw/resolve/main/WAN22-NSFW-I2V-HIGH.safetensors diffusion_models
 https://huggingface.co/comfyuistudio/wan22nsfw/resolve/main/WAN22-NSFW-I2V-LOW.safetensors diffusion_models
@@ -105,25 +104,17 @@ https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/Qwen
 https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V1.0.safetensors loras/qwen
 https://huggingface.co/lightx2v/Wan2.2-Lightning/resolve/main/Wan2.2-I2V-A14B-4steps-lora-rank64-Seko-V1/high_noise_model.safetensors loras Wan2.2-I2V-HIGH-4steps-lora-rank64-Seko-V1.safetensors
 https://huggingface.co/lightx2v/Wan2.2-Lightning/resolve/main/Wan2.2-I2V-A14B-4steps-lora-rank64-Seko-V1/low_noise_model.safetensors loras Wan2.2-I2V-LOW-4steps-lora-rank64-Seko-V1.safetensors
-https://huggingface.co/lightx2v/Wan2.2-Lightning/resolve/main/Wan2.2-T2V-A14B-4steps-lora-rank64-Seko-V2.0/high_noise_model.safetensors loras Wan2.2-T2V-4steps-HIGH-rank64-Seko-V2.0.safetensors
-https://huggingface.co/lightx2v/Wan2.2-Lightning/resolve/main/Wan2.2-T2V-A14B-4steps-lora-rank64-Seko-V2.0/low_noise_model.safetensors loras Wan2.2-T2V-4steps-LOW-rank64-Seko-V2.0.safetensors
 https://huggingface.co/lilcheaty/MiniMax-H3-NVFP4/resolve/main/minimax_h3_fl2va_pruned_nvfp4.safetensors diffusion_models
 https://huggingface.co/lllyasviel/fooocus_inpaint/resolve/main/fooocus_inpaint_head.pth inpaint
 https://huggingface.co/lllyasviel/fooocus_inpaint/resolve/main/inpaint_v26.fooocus.patch inpaint
-https://huggingface.co/lodestones/Chroma1-HD/resolve/main/Chroma1-HD.safetensors diffusion_models
-https://huggingface.co/louisnguyen198x/SmoothMixWan2.2/resolve/main/smoothMixWan22I2VT2V_t2vHighV20.safetensors diffusion_models
-https://huggingface.co/louisnguyen198x/SmoothMixWan2.2/resolve/main/smoothMixWan22I2VT2V_t2vLowV20.safetensors diffusion_models
 https://huggingface.co/onnx-community/yolov10m/resolve/main/onnx/model.onnx detection yolov10m.onnx
 https://huggingface.co/openai/clip-vit-large-patch14/resolve/main/model.safetensors clip_vision clip-vit-large-patch14.safetensors
 https://huggingface.co/outfly/face_yolov8m/resolve/main/face_yolov8m.pt ultralytics/bbox
 https://huggingface.co/realrebelai/SCAIL-2_GGUF/resolve/main/SCAIL-2-Q4_K_M.gguf unet
-https://huggingface.co/silveroxides/flan-t5-xxl-encoder-only/resolve/main/flan-t5-xxl_float8_e4m3fn_scaled_stochastic.safetensors text_encoders
 https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors vae
 https://huggingface.co/unsloth/LTX-2.3-GGUF/resolve/main/distilled-1.1/ltx-2.3-22b-distilled-1.1-Q6_K.gguf unet
 https://huggingface.co/valiantcat/LTX-2.3-Transition-LORA/resolve/main/ltx2.3-transition.safetensors loras
 https://huggingface.co/vantagewithai/Krea-2-Turbo-GGUF/resolve/main/krea2_turbo-Q6_K.gguf unet
-https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX/resolve/main/FusionX_LoRa/Wan2.1_I2V_14B_FusionX_LoRA.safetensors loras
 https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX/resolve/main/FusionX_LoRa/Wan2.1_I2V_14B_FusionX_LoRA.safetensors loras/wan
-https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX/resolve/main/FusionX_LoRa/Wan2.1_T2V_14B_FusionX_LoRA.safetensors loras
 https://huggingface.co/vrgamedevgirl84/Wan14BT2VFusioniX/resolve/main/FusionX_LoRa/Wan2.1_T2V_14B_FusionX_LoRA.safetensors loras/wan
 https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/resolve/main/diffusion_pytorch_model_promax.safetensors controlnet controlnet-union-sdxl-1.0.safetensors
