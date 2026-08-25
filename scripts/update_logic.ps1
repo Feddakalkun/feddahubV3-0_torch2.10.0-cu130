@@ -927,6 +927,17 @@ if (Test-Path $PreviewSetupScript) {
     Write-Host "  [WARNING] setup_comfyui_config.py not found, skipping preview defaults." -ForegroundColor Yellow
 }
 
+# Republished every update: the set changes, and eighteen graphs were deleted
+# in one commit today. A copy made once at install time slowly stops matching
+# what the app can run.
+Write-Host "`n[2c/3] Publishing workflows to ComfyUI..." -ForegroundColor Yellow
+$PublishWorkflows = Join-Path $RootPath "scripts\publish_workflows.ps1"
+if (Test-Path $PublishWorkflows) {
+    & $PublishWorkflows -RootPath $RootPath
+} else {
+    Write-Host "  [WARNING] publish_workflows.ps1 not found, skipping." -ForegroundColor Yellow
+}
+
 # Z-Image core models are NOT auto-downloaded (even on update).
 # They will be downloaded by ComfyUI when a user actually runs a Z-Image workflow.
 # (Removed per requirement - no auto model downloads in installer or update)

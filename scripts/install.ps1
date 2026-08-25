@@ -1051,6 +1051,14 @@ if (Test-Path $PreviewSetupScript) {
     }
 }
 
+# The graphs go where ComfyUI's own workflow browser can find them, so a user
+# who wants to see how a workflow is built can open it rather than go looking
+# for the file.
+$PublishWorkflows = Join-Path $ScriptPath "publish_workflows.ps1"
+if (Test-Path $PublishWorkflows) {
+    & $PublishWorkflows -RootPath $RootPath
+}
+
 # Z-Image core models are NOT auto-downloaded during install.
 # Users can run download_zimage_models.bat or ensure_zimage_core_models.ps1 manually if needed.
 # (removed from auto-install per request)
