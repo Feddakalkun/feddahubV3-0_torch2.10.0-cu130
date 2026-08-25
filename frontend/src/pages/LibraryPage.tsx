@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { Boxes, Loader2, Upload, Users } from 'lucide-react';
+import { Boxes, Download, Loader2, Upload, Users } from 'lucide-react';
 import { CharacterBrowser } from '../components/library/CharacterBrowser';
 import { ModelOverview } from '../components/library/ModelOverview';
+import { LoRADownloader, type LoRAFamily } from '../components/LoRADownloader';
 import { useInstalledLoras } from '../components/library/useInstalledLoras';
 import { useLoraUpload } from '../components/library/useLoraUpload';
 import { cn } from '../lib/styles';
@@ -40,7 +41,7 @@ const FAMILIES: Family[] = [
 ];
 
 export const LibraryPage = () => {
-  const [view, setView] = useState<'characters' | 'models'>('characters');
+  const [view, setView] = useState<'characters' | 'models' | 'packs'>('characters');
   const [familyKey, setFamilyKey] = useState('all');
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [pickFor, setPickFor] = useState<string>('imported');
@@ -65,7 +66,7 @@ export const LibraryPage = () => {
           <div>
             <p className="v14-kicker text-white/45">Models &amp; LoRAs</p>
             <h1 className="mt-1 text-xl font-semibold tracking-tight text-white">
-              {view === 'characters' ? 'Characters' : 'Models'}
+              {view === 'characters' ? 'Characters' : view === 'models' ? 'Models' : 'Download packs'}
             </h1>
           </div>
           {uploadState && (
@@ -77,7 +78,8 @@ export const LibraryPage = () => {
         </div>
 
         <div className="mt-3 flex gap-1 rounded-lg border border-white/10 bg-black/30 p-0.5 w-fit">
-          {([['characters', 'Characters', Users], ['models', 'Models', Boxes]] as const).map(([key, label, Icon]) => (
+          {([['characters', 'Characters', Users], ['models', 'Models', Boxes],
+             ['packs', 'Packs', Download]] as const).map(([key, label, Icon]) => (
             <button
               key={key}
               onClick={() => setView(key)}
@@ -92,7 +94,7 @@ export const LibraryPage = () => {
           ))}
         </div>
 
-        {view === 'characters' && (
+        {view !== 'models' && (
         <>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {FAMILIES.map((f) => {
@@ -168,7 +170,14 @@ export const LibraryPage = () => {
       <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-4">
         {view === 'characters'
           ? <CharacterBrowser familyPrefixes={family.prefixes} refreshKey={loras.length} />
-          : <ModelOverview />}
+          : view === 'models'
+            ? <ModelOverview />
+            // The Library's families and the pack table's do not line up
+            // exactly - "all" and "krea2" have no packs of their own - so an
+            // unmatched one falls back to showing everything rather than
+            // showing nothing.
+            : <LoRADownloader family={(['z-image', 'qwen', 'wan', 'ltx', 'flux2klein', 'sdxl', 'sd15']
+                .includes(familyKey) ? familyKey : 'all') as LoRAFamily} />}
       </div>
     </div>
   );

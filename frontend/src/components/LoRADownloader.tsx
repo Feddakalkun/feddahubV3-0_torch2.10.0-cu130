@@ -14,6 +14,7 @@ interface LoRAStatus {
 }
 
 export type LoRAFamily =
+    | 'all'
     | 'z-image'
     | 'qwen'
     | 'flux2klein'
@@ -46,6 +47,8 @@ interface CatalogItem {
 }
 
 const FAMILY_PACKS: Record<LoRAFamily, PackConfig[]> = {
+    // Filled in below from the rest of the table, so it cannot fall behind it.
+    all:          [],
     'z-image':    [
         { key: 'zimage_turbo', title: 'Z-Image Turbo Celeb Pack', subtitle: 'pmczip/Z-Image-Turbo_Models' },
         { key: 'zimage_nsfw', title: 'Z-Image NSFW Pack', subtitle: 'qqnyanddld/nsfw-z-image-lora' },
@@ -151,7 +154,14 @@ const CharacterCard = ({
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export const LoRADownloader = ({ family = 'z-image' }: LoRADownloaderProps) => {
+// Every pack, deduplicated, for the family picker's "All". Derived from the
+// table above so a pack added to a family cannot be missing here.
+FAMILY_PACKS.all = Object.entries(FAMILY_PACKS)
+    .filter(([key]) => key !== 'all')
+    .flatMap(([, list]) => list)
+    .filter((pack, i, list) => list.findIndex((p) => p.key === pack.key) === i);
+
+export const LoRADownloader = ({ family = 'all' }: LoRADownloaderProps) => {
     const [loraStatus, setLoraStatus]         = useState<Record<string, LoRAStatus>>({});
     const [isLoading, setIsLoading]           = useState(true);
     const [importUrl, setImportUrl]           = useState('');
