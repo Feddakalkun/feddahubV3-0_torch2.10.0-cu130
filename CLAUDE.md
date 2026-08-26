@@ -37,10 +37,11 @@ files; compare against that number rather than expecting zero.
 
 ## Publishing
 
-Only ever via `scripts/sync_mirror.ps1`, and only when explicitly asked. It
-pushes, rebuilds the bare repo, uploads the repo and the installer, and verifies
-both sources serve the same commit. A bare `git push` publishes to GitHub and
-leaves the domain — which is what users install from — stale.
+Only via the maintainer's `sync_mirror.ps1`, which sits beside this repository
+rather than in it, and only when explicitly asked. It pushes, rebuilds the bare
+repo, uploads the repo and the installer, and verifies both sources serve the
+same commit. A bare `git push` publishes to GitHub and leaves the mirror the
+updater tries first — which is what users install from — stale.
 
 `install/app` runs `git reset --hard origin/main` when it updates, so anything
 copied in that is not published is erased on the next launch. Its guard only
