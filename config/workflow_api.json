@@ -4473,5 +4473,182 @@
         "label": "LoRAs"
       }
     }
+  },
+  "ltx25-txt2vid": {
+    "name": "LTX 2.5 Text to Video",
+    "filename": "ltx/LTX25txt2vid-api.json",
+    "description": "LTX 2.5 text to video with synced audio. Two sampling passes and a latent spatial upscaler.",
+    "inputs": {
+      "prompt": {
+        "node_id": "559",
+        "input_key": "value",
+        "type": "string",
+        "label": "Prompt"
+      },
+      "negative": {
+        "node_id": "560",
+        "input_key": "text",
+        "type": "string",
+        "label": "Negative Prompt"
+      },
+      "aspect_ratio": {
+        "node_id": "558",
+        "input_key": "aspect_ratio",
+        "type": "string",
+        "label": "Aspect Ratio"
+      },
+      "megapixels": {
+        "node_id": "558",
+        "input_key": "megapixels",
+        "type": "number",
+        "label": "Megapixels"
+      },
+      "duration": {
+        "node_id": "563",
+        "input_key": "value",
+        "type": "number",
+        "label": "Duration (s)"
+      },
+      "frame_rate": {
+        "node_id": "565",
+        "input_key": "value",
+        "type": "number",
+        "label": "Frame Rate"
+      },
+      "seed": {
+        "node_ids": [
+          "578",
+          "603"
+        ],
+        "input_key": "noise_seed",
+        "type": "number",
+        "label": "Seed"
+      }
+    }
+  },
+  "ltx25-img2vid": {
+    "name": "LTX 2.5 Image to Video",
+    "filename": "ltx/LTX25img2vid-api.json",
+    "description": "Animate a still with LTX 2.5, audio included.",
+    "inputs": {
+      "image": {
+        "node_id": "454",
+        "input_key": "image",
+        "type": "string",
+        "label": "Source Image"
+      },
+      "prompt": {
+        "node_id": "471",
+        "input_key": "value",
+        "type": "string",
+        "label": "Prompt"
+      },
+      "negative": {
+        "node_id": "481",
+        "input_key": "text",
+        "type": "string",
+        "label": "Negative Prompt"
+      },
+      "aspect_ratio": {
+        "node_id": "456",
+        "input_key": "aspect_ratio",
+        "type": "string",
+        "label": "Aspect Ratio"
+      },
+      "megapixels": {
+        "node_id": "456",
+        "input_key": "megapixels",
+        "type": "number",
+        "label": "Megapixels"
+      },
+      "duration": {
+        "node_id": "475",
+        "input_key": "value",
+        "type": "number",
+        "label": "Duration (s)"
+      },
+      "frame_rate": {
+        "node_id": "487",
+        "input_key": "value",
+        "type": "number",
+        "label": "Frame Rate"
+      },
+      "strength": {
+        "node_id": "491",
+        "input_key": "strength",
+        "type": "number",
+        "label": "Motion Strength"
+      },
+      "seed": {
+        "node_ids": [
+          "485",
+          "504"
+        ],
+        "input_key": "noise_seed",
+        "type": "number",
+        "label": "Seed"
+      }
+    }
+  },
+  "ltx25-fflf": {
+    "name": "LTX 2.5 First / Last Frame",
+    "filename": "ltx/LTX25-fflf-api.json",
+    "description": "Give it the first frame and the last one; LTX 2.5 makes the motion between, with audio.",
+    "inputs": {
+      "image": {
+        "node_id": "460",
+        "input_key": "image",
+        "type": "string",
+        "label": "First Frame"
+      },
+      "image2": {
+        "node_id": "461",
+        "input_key": "image",
+        "type": "string",
+        "label": "Last Frame"
+      },
+      "prompt": {
+        "node_id": "645",
+        "input_key": "value",
+        "type": "string",
+        "label": "Prompt"
+      },
+      "negative": {
+        "node_id": "623",
+        "input_key": "text",
+        "type": "string",
+        "label": "Negative Prompt"
+      },
+      "aspect_ratio": {
+        "node_id": "646",
+        "input_key": "aspect_ratio",
+        "type": "string",
+        "label": "Aspect Ratio"
+      },
+      "megapixels": {
+        "node_id": "646",
+        "input_key": "megapixels",
+        "type": "number",
+        "label": "Megapixels"
+      },
+      "duration": {
+        "node_id": "642",
+        "input_key": "value",
+        "type": "number",
+        "label": "Duration (s)"
+      },
+      "frame_rate": {
+        "node_id": "644",
+        "input_key": "value",
+        "type": "number",
+        "label": "Frame Rate"
+      },
+      "seed": {
+        "node_id": "622",
+        "input_key": "noise_seed",
+        "type": "number",
+        "label": "Seed"
+      }
+    }
   }
 }

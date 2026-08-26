@@ -1,4 +1,4 @@
-import { Bot, Clapperboard, Download, Film, Images, LayoutDashboard, MessagesSquare, Sparkles, Users, Video, Volume2, Heart, Wand2, type LucideIcon } from 'lucide-react';
+import { Bot, Clapperboard, Download, Film, Images, LayoutDashboard, MessagesSquare, Play, Sparkles, Users, Video, Volume2, Heart, Wand2, type LucideIcon } from 'lucide-react';
 
 export type ModulePack = 'core' | 'booster';
 export type ModuleArea = 'home' | 'image' | 'video' | 'system' | 'automation';
@@ -19,7 +19,8 @@ export type SourceModuleId =
   | 'flux-klein-uncensored'
   | 'krea2-txt2img'
   | 'ideogram'
-  | 'flux-kontext-clothes-remover';
+  | 'flux-kontext-clothes-remover'
+  | 'ltx-25';
 
 export interface FeddaModule {
   id: string;
@@ -265,6 +266,49 @@ export const FEDDA_MODULES: FeddaModule[] = [
     defaultTab: 'transform-reel',
     Icon: Wand2,
     wip: true,
+  },
+  {
+    id: 'ltx25-txt2vid',
+    sourceModuleId: 'ltx-25',
+    // Its own module to install, the LTX card to live on.
+    family: 'ltx-video',
+    label: 'LTX 2.5 Text to Video',
+    description: 'A clip with synced audio, straight from a prompt.',
+    area: 'video',
+    pack: 'booster',
+
+    tabs: ['ltx25-txt2vid'],
+    workflows: ['ltx25-txt2vid'],
+    defaultTab: 'ltx25-txt2vid',
+    Icon: Play,
+  },
+  {
+    id: 'ltx25-img2vid',
+    sourceModuleId: 'ltx-25',
+    family: 'ltx-video',
+    label: 'LTX 2.5 Image to Video',
+    description: 'Animate a still with LTX 2.5, audio included.',
+    area: 'video',
+    pack: 'booster',
+
+    tabs: ['ltx25-img2vid'],
+    workflows: ['ltx25-img2vid'],
+    defaultTab: 'ltx25-img2vid',
+    Icon: Video,
+  },
+  {
+    id: 'ltx25-fflf',
+    sourceModuleId: 'ltx-25',
+    family: 'ltx-video',
+    label: 'LTX 2.5 First / Last',
+    description: 'Two frames in, the motion between them out.',
+    area: 'video',
+    pack: 'booster',
+
+    tabs: ['ltx25-fflf'],
+    workflows: ['ltx25-fflf'],
+    defaultTab: 'ltx25-fflf',
+    Icon: Film,
   },
   {
     id: 'reel-machine',

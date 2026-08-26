@@ -476,6 +476,31 @@
         "ComfyUI-Easy-Use",
         "ComfyUI-GGUF"
       ]
+    },
+    {
+      "id": "ltx-25",
+      "label": "LTX 2.5",
+      "pack": "booster",
+      "area": "video",
+      "enabled": true,
+      "tabs": [
+        "ltx25-txt2vid",
+        "ltx25-img2vid",
+        "ltx25-fflf"
+      ],
+      "workflows": [
+        "ltx25-txt2vid",
+        "ltx25-img2vid",
+        "ltx25-fflf"
+      ],
+      "custom_nodes": [
+        "ComfyUI-LTXVideo",
+        "ComfyMath",
+        "comfy_mtb",
+        "ComfyUI-VideoHelperSuite",
+        "WhatDreamsCost-ComfyUI",
+        "ComfyUI-GGUF"
+      ]
     }
   ]
 }
