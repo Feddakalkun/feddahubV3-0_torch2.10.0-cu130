@@ -14,7 +14,7 @@ param([switch]$SkipPush)
 $ErrorActionPreference = "Continue"
 
 $Repo   = Split-Path $PSScriptRoot -Parent
-$Bare   = "H:\Fedda-Hub\fedda.git"
+$Bare   = "H:\Fedda-Hub\Fedda-HubV3\fedda.git"
 $Remote = "fedda@204.168.229.123"
 $Site   = "~/feddakalkun.com"
 
